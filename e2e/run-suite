@@ -28,6 +28,6 @@ fi
 
 cd packages/grafana-e2e
 
-CYPRESS_CACHE_FOLDER=/tmp/Cypress/ yarn $CMD --env BASE_URL=$URL,SLOWMO=$SLOWMO \
+yarn $CMD --env BASE_URL=$URL,SLOWMO=$SLOWMO \
   --config defaultCommandTimeout=30000,integrationFolder=../../e2e/"${args[0]}"/specs,screenshotsFolder=../../e2e"${args[0]}"/screenshots,videosFolder=../../e2e/"${args[0]}"/videos,fileServerFolder=./cypress,viewportWidth=1920,viewportHeight=1080,trashAssetsBeforeRuns=false,videoUploadOnPasses=false \
   $PARAMS
