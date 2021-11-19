@@ -249,7 +249,10 @@ def publish_storybook_step(edition, ver_mode):
         'image': publish_image,
         'depends_on': [
             'build-storybook',
-            'end-to-end-tests',
+            'end-to-end-tests-dashboards-suite',
+            'end-to-end-tests-panels-suite',
+            'end-to-end-tests-smoke-tests-suite',
+            'end-to-end-tests-various-suite',
         ],
         'environment': {
             'GCP_KEY': from_secret('gcp_key'),
@@ -608,12 +611,12 @@ def e2e_tests_server_step(edition, port=3001):
         ],
     }
 
-def e2e_tests_step(edition, port=3001, tries=None):
-    cmd = './bin/grabpl e2e-tests --port {}'.format(port)
+def e2e_tests_step(suite, edition, port=3001, tries=None):
+    cmd = './bin/grabpl e2e-tests --port {} --suite'.format(port, suite)
     if tries:
         cmd += ' --tries {}'.format(tries)
     return {
-        'name': 'end-to-end-tests' + enterprise2_suffix(edition),
+        'name': 'end-to-end-tests-{}'.format(suite) + enterprise2_suffix(edition),
         'image': 'grafana/ci-e2e:12.19.0-1',
         'depends_on': [
             'end-to-end-tests-server' + enterprise2_suffix(edition),
@@ -769,7 +772,10 @@ def release_canary_npm_packages_step(edition):
         'name': 'release-canary-npm-packages',
         'image': build_image,
         'depends_on': [
-            'end-to-end-tests',
+            'end-to-end-tests-dashboards-suite',
+            'end-to-end-tests-panels-suite',
+            'end-to-end-tests-smoke-tests-suite',
+            'end-to-end-tests-various-suite',
         ],
         'environment': {
             'GITHUB_PACKAGE_TOKEN': from_secret('github_package_token'),
@@ -797,7 +803,10 @@ def upload_packages_step(edition, ver_mode, is_downstream=False):
         cmd = './bin/grabpl upload-packages --edition {}{}'.format(edition, packages_bucket)
 
     dependencies = [
-        'end-to-end-tests' + enterprise2_suffix(edition),
+        'end-to-end-tests-dashboards-suite' + enterprise2_suffix(edition),
+        'end-to-end-tests-panels-suite' + enterprise2_suffix(edition),
+        'end-to-end-tests-smoke-tests-suite' + enterprise2_suffix(edition),
+        'end-to-end-tests-various-suite' + enterprise2_suffix(edition),
     ]
 
     if edition in ('enterprise', 'enterprise2'):

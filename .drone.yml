@@ -190,13 +190,40 @@ steps:
   name: end-to-end-tests-server
 - commands:
   - yarn run cypress install
-  - ./bin/grabpl e2e-tests --port 3001
+  - ./bin/grabpl e2e-tests --port 3001 --suite
   depends_on:
   - end-to-end-tests-server
   environment:
     HOST: end-to-end-tests-server
   image: grafana/ci-e2e:12.19.0-1
-  name: end-to-end-tests
+  name: end-to-end-tests-dashboards-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-smoke-tests-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-panels-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-various-suite
 - commands:
   - yarn storybook:build
   - ./bin/grabpl verify-storybook
@@ -554,13 +581,40 @@ steps:
   name: end-to-end-tests-server
 - commands:
   - yarn run cypress install
-  - ./bin/grabpl e2e-tests --port 3001
+  - ./bin/grabpl e2e-tests --port 3001 --suite
   depends_on:
   - end-to-end-tests-server
   environment:
     HOST: end-to-end-tests-server
   image: grafana/ci-e2e:12.19.0-1
-  name: end-to-end-tests
+  name: end-to-end-tests-dashboards-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-smoke-tests-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-panels-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-various-suite
 - commands:
   - yarn storybook:build
   - ./bin/grabpl verify-storybook
@@ -576,7 +630,10 @@ steps:
   - gsutil -m rsync -d -r ./packages/grafana-ui/dist/storybook gs://grafana-storybook/canary
   depends_on:
   - build-storybook
-  - end-to-end-tests
+  - end-to-end-tests-dashboards-suite
+  - end-to-end-tests-panels-suite
+  - end-to-end-tests-smoke-tests-suite
+  - end-to-end-tests-various-suite
   environment:
     GCP_KEY:
       from_secret: gcp_key
@@ -645,7 +702,10 @@ steps:
 - commands:
   - ./scripts/circle-release-canary-packages.sh
   depends_on:
-  - end-to-end-tests
+  - end-to-end-tests-dashboards-suite
+  - end-to-end-tests-panels-suite
+  - end-to-end-tests-smoke-tests-suite
+  - end-to-end-tests-various-suite
   environment:
     GITHUB_PACKAGE_TOKEN:
       from_secret: github_package_token
@@ -654,7 +714,10 @@ steps:
 - commands:
   - ./bin/grabpl upload-packages --edition oss --packages-bucket grafana-downloads
   depends_on:
-  - end-to-end-tests
+  - end-to-end-tests-dashboards-suite
+  - end-to-end-tests-panels-suite
+  - end-to-end-tests-smoke-tests-suite
+  - end-to-end-tests-various-suite
   environment:
     GCP_GRAFANA_UPLOAD_KEY:
       from_secret: gcp_key
@@ -1011,13 +1074,40 @@ steps:
   name: end-to-end-tests-server
 - commands:
   - yarn run cypress install
-  - ./bin/grabpl e2e-tests --port 3001 --tries 3
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
   depends_on:
   - end-to-end-tests-server
   environment:
     HOST: end-to-end-tests-server
   image: grafana/ci-e2e:12.19.0-1
-  name: end-to-end-tests
+  name: end-to-end-tests-dashboards-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-smoke-tests-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-panels-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-various-suite
 - commands:
   - ls dist/*.tar.gz*
   - cp dist/*.tar.gz* packaging/docker/
@@ -1070,7 +1160,10 @@ steps:
 - commands:
   - ./bin/grabpl upload-packages --edition oss --packages-bucket grafana-downloads
   depends_on:
-  - end-to-end-tests
+  - end-to-end-tests-dashboards-suite
+  - end-to-end-tests-panels-suite
+  - end-to-end-tests-smoke-tests-suite
+  - end-to-end-tests-various-suite
   environment:
     GCP_GRAFANA_UPLOAD_KEY:
       from_secret: gcp_key
@@ -1083,7 +1176,10 @@ steps:
   - gsutil -m rsync -d -r ./packages/grafana-ui/dist/storybook gs://grafana-storybook/${DRONE_TAG}
   depends_on:
   - build-storybook
-  - end-to-end-tests
+  - end-to-end-tests-dashboards-suite
+  - end-to-end-tests-panels-suite
+  - end-to-end-tests-smoke-tests-suite
+  - end-to-end-tests-various-suite
   environment:
     GCP_KEY:
       from_secret: gcp_key
@@ -1430,13 +1526,40 @@ steps:
   name: end-to-end-tests-server
 - commands:
   - yarn run cypress install
-  - ./bin/grabpl e2e-tests --port 3001 --tries 3
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
   depends_on:
   - end-to-end-tests-server
   environment:
     HOST: end-to-end-tests-server
   image: grafana/ci-e2e:12.19.0-1
-  name: end-to-end-tests
+  name: end-to-end-tests-dashboards-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-smoke-tests-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-panels-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-various-suite
 - commands:
   - ls dist/*.tar.gz*
   - cp dist/*.tar.gz* packaging/docker/
@@ -1498,7 +1621,10 @@ steps:
 - commands:
   - ./bin/grabpl upload-packages --edition enterprise --packages-bucket grafana-downloads
   depends_on:
-  - end-to-end-tests
+  - end-to-end-tests-dashboards-suite
+  - end-to-end-tests-panels-suite
+  - end-to-end-tests-smoke-tests-suite
+  - end-to-end-tests-various-suite
   - redis-integration-tests
   - memcached-integration-tests
   environment:
@@ -1541,13 +1667,40 @@ steps:
   name: end-to-end-tests-server-enterprise2
 - commands:
   - yarn run cypress install
-  - ./bin/grabpl e2e-tests --port 3002 --tries 3
+  - ./bin/grabpl e2e-tests --port 3002 --suite --tries 3
   depends_on:
   - end-to-end-tests-server-enterprise2
   environment:
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/ci-e2e:12.19.0-1
-  name: end-to-end-tests-enterprise2
+  name: end-to-end-tests-dashboards-suite-enterprise2
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3002 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server-enterprise2
+  environment:
+    HOST: end-to-end-tests-server-enterprise2
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-smoke-tests-suite-enterprise2
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3002 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server-enterprise2
+  environment:
+    HOST: end-to-end-tests-server-enterprise2
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-panels-suite-enterprise2
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3002 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server-enterprise2
+  environment:
+    HOST: end-to-end-tests-server-enterprise2
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-various-suite-enterprise2
 - commands:
   - ./bin/grabpl upload-cdn --edition enterprise2 --bucket "grafana-static-assets"
   depends_on:
@@ -1560,7 +1713,10 @@ steps:
 - commands:
   - ./bin/grabpl upload-packages --edition enterprise2 --packages-bucket grafana-downloads-enterprise2
   depends_on:
-  - end-to-end-tests-enterprise2
+  - end-to-end-tests-dashboards-suite-enterprise2
+  - end-to-end-tests-panels-suite-enterprise2
+  - end-to-end-tests-smoke-tests-suite-enterprise2
+  - end-to-end-tests-various-suite-enterprise2
   - redis-integration-tests
   - memcached-integration-tests
   environment:
@@ -1956,13 +2112,40 @@ steps:
   name: end-to-end-tests-server
 - commands:
   - yarn run cypress install
-  - ./bin/grabpl e2e-tests --port 3001 --tries 3
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
   depends_on:
   - end-to-end-tests-server
   environment:
     HOST: end-to-end-tests-server
   image: grafana/ci-e2e:12.19.0-1
-  name: end-to-end-tests
+  name: end-to-end-tests-dashboards-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-smoke-tests-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-panels-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-various-suite
 - commands:
   - ls dist/*.tar.gz*
   - cp dist/*.tar.gz* packaging/docker/
@@ -2007,7 +2190,10 @@ steps:
 - commands:
   - ./bin/grabpl upload-packages --edition oss --packages-bucket grafana-downloads-test
   depends_on:
-  - end-to-end-tests
+  - end-to-end-tests-dashboards-suite
+  - end-to-end-tests-panels-suite
+  - end-to-end-tests-smoke-tests-suite
+  - end-to-end-tests-various-suite
   environment:
     GCP_GRAFANA_UPLOAD_KEY:
       from_secret: gcp_key
@@ -2017,7 +2203,10 @@ steps:
   - echo Testing release
   depends_on:
   - build-storybook
-  - end-to-end-tests
+  - end-to-end-tests-dashboards-suite
+  - end-to-end-tests-panels-suite
+  - end-to-end-tests-smoke-tests-suite
+  - end-to-end-tests-various-suite
   environment:
     GCP_KEY:
       from_secret: gcp_key
@@ -2364,13 +2553,40 @@ steps:
   name: end-to-end-tests-server
 - commands:
   - yarn run cypress install
-  - ./bin/grabpl e2e-tests --port 3001 --tries 3
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
   depends_on:
   - end-to-end-tests-server
   environment:
     HOST: end-to-end-tests-server
   image: grafana/ci-e2e:12.19.0-1
-  name: end-to-end-tests
+  name: end-to-end-tests-dashboards-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-smoke-tests-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-panels-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-various-suite
 - commands:
   - ls dist/*.tar.gz*
   - cp dist/*.tar.gz* packaging/docker/
@@ -2424,7 +2640,10 @@ steps:
 - commands:
   - ./bin/grabpl upload-packages --edition enterprise --packages-bucket grafana-downloads-test
   depends_on:
-  - end-to-end-tests
+  - end-to-end-tests-dashboards-suite
+  - end-to-end-tests-panels-suite
+  - end-to-end-tests-smoke-tests-suite
+  - end-to-end-tests-various-suite
   - redis-integration-tests
   - memcached-integration-tests
   environment:
@@ -2467,13 +2686,40 @@ steps:
   name: end-to-end-tests-server-enterprise2
 - commands:
   - yarn run cypress install
-  - ./bin/grabpl e2e-tests --port 3002 --tries 3
+  - ./bin/grabpl e2e-tests --port 3002 --suite --tries 3
   depends_on:
   - end-to-end-tests-server-enterprise2
   environment:
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/ci-e2e:12.19.0-1
-  name: end-to-end-tests-enterprise2
+  name: end-to-end-tests-dashboards-suite-enterprise2
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3002 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server-enterprise2
+  environment:
+    HOST: end-to-end-tests-server-enterprise2
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-smoke-tests-suite-enterprise2
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3002 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server-enterprise2
+  environment:
+    HOST: end-to-end-tests-server-enterprise2
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-panels-suite-enterprise2
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3002 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server-enterprise2
+  environment:
+    HOST: end-to-end-tests-server-enterprise2
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-various-suite-enterprise2
 - commands:
   - ./bin/grabpl upload-cdn --edition enterprise2 --bucket "grafana-static-assets"
   depends_on:
@@ -2486,7 +2732,10 @@ steps:
 - commands:
   - ./bin/grabpl upload-packages --edition enterprise2 --packages-bucket grafana-downloads-test
   depends_on:
-  - end-to-end-tests-enterprise2
+  - end-to-end-tests-dashboards-suite-enterprise2
+  - end-to-end-tests-panels-suite-enterprise2
+  - end-to-end-tests-smoke-tests-suite-enterprise2
+  - end-to-end-tests-various-suite-enterprise2
   - redis-integration-tests
   - memcached-integration-tests
   environment:
@@ -2885,13 +3134,40 @@ steps:
   name: end-to-end-tests-server
 - commands:
   - yarn run cypress install
-  - ./bin/grabpl e2e-tests --port 3001 --tries 3
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
   depends_on:
   - end-to-end-tests-server
   environment:
     HOST: end-to-end-tests-server
   image: grafana/ci-e2e:12.19.0-1
-  name: end-to-end-tests
+  name: end-to-end-tests-dashboards-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-smoke-tests-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-panels-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-various-suite
 - commands:
   - ls dist/*.tar.gz*
   - cp dist/*.tar.gz* packaging/docker/
@@ -2936,7 +3212,10 @@ steps:
 - commands:
   - ./bin/grabpl upload-packages --edition oss --packages-bucket grafana-downloads
   depends_on:
-  - end-to-end-tests
+  - end-to-end-tests-dashboards-suite
+  - end-to-end-tests-panels-suite
+  - end-to-end-tests-smoke-tests-suite
+  - end-to-end-tests-various-suite
   environment:
     GCP_GRAFANA_UPLOAD_KEY:
       from_secret: gcp_key
@@ -3263,13 +3542,40 @@ steps:
   name: end-to-end-tests-server
 - commands:
   - yarn run cypress install
-  - ./bin/grabpl e2e-tests --port 3001 --tries 3
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
   depends_on:
   - end-to-end-tests-server
   environment:
     HOST: end-to-end-tests-server
   image: grafana/ci-e2e:12.19.0-1
-  name: end-to-end-tests
+  name: end-to-end-tests-dashboards-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-smoke-tests-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-panels-suite
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3001 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server
+  environment:
+    HOST: end-to-end-tests-server
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-various-suite
 - commands:
   - ls dist/*.tar.gz*
   - cp dist/*.tar.gz* packaging/docker/
@@ -3332,7 +3638,10 @@ steps:
 - commands:
   - ./bin/grabpl upload-packages --edition enterprise --packages-bucket grafana-downloads
   depends_on:
-  - end-to-end-tests
+  - end-to-end-tests-dashboards-suite
+  - end-to-end-tests-panels-suite
+  - end-to-end-tests-smoke-tests-suite
+  - end-to-end-tests-various-suite
   - redis-integration-tests
   - memcached-integration-tests
   environment:
@@ -3375,13 +3684,40 @@ steps:
   name: end-to-end-tests-server-enterprise2
 - commands:
   - yarn run cypress install
-  - ./bin/grabpl e2e-tests --port 3002 --tries 3
+  - ./bin/grabpl e2e-tests --port 3002 --suite --tries 3
   depends_on:
   - end-to-end-tests-server-enterprise2
   environment:
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/ci-e2e:12.19.0-1
-  name: end-to-end-tests-enterprise2
+  name: end-to-end-tests-dashboards-suite-enterprise2
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3002 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server-enterprise2
+  environment:
+    HOST: end-to-end-tests-server-enterprise2
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-smoke-tests-suite-enterprise2
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3002 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server-enterprise2
+  environment:
+    HOST: end-to-end-tests-server-enterprise2
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-panels-suite-enterprise2
+- commands:
+  - yarn run cypress install
+  - ./bin/grabpl e2e-tests --port 3002 --suite --tries 3
+  depends_on:
+  - end-to-end-tests-server-enterprise2
+  environment:
+    HOST: end-to-end-tests-server-enterprise2
+  image: grafana/ci-e2e:12.19.0-1
+  name: end-to-end-tests-various-suite-enterprise2
 - commands:
   - ./bin/grabpl upload-cdn --edition enterprise2 --bucket "grafana-static-assets"
   depends_on:
@@ -3394,7 +3730,10 @@ steps:
 - commands:
   - ./bin/grabpl upload-packages --edition enterprise2 --packages-bucket grafana-downloads-enterprise2
   depends_on:
-  - end-to-end-tests-enterprise2
+  - end-to-end-tests-dashboards-suite-enterprise2
+  - end-to-end-tests-panels-suite-enterprise2
+  - end-to-end-tests-smoke-tests-suite-enterprise2
+  - end-to-end-tests-various-suite-enterprise2
   - redis-integration-tests
   - memcached-integration-tests
   environment:
@@ -3556,6 +3895,6 @@ kind: secret
 name: drone_token
 ---
 kind: signature
-hmac: 6a0dbe456393f0b44f936381dc78e31120cab7c50ccc408b0a0a2b7f6689f174
+hmac: 10f1d6411f9df252233e1432f6b64963b7dba6b8ade2ec01bcf5a7eca6266f18
 
 ...
