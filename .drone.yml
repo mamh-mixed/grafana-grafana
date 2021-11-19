@@ -180,7 +180,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress yarn run cypress install
   depends_on:
   - package
   image: grafana/ci-e2e:12.19.0-1
@@ -195,6 +195,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-server
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite dashboards-suite
   depends_on:
   - cypress
@@ -203,6 +204,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite smoke-tests-suite
   depends_on:
   - cypress
@@ -211,6 +213,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite panels-suite
   depends_on:
   - cypress
@@ -219,6 +222,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite various-suite
   depends_on:
   - cypress
@@ -573,7 +577,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress yarn run cypress install
   depends_on:
   - package
   image: grafana/ci-e2e:12.19.0-1
@@ -588,6 +592,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-server
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite dashboards-suite
   depends_on:
   - cypress
@@ -596,6 +601,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite smoke-tests-suite
   depends_on:
   - cypress
@@ -604,6 +610,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite panels-suite
   depends_on:
   - cypress
@@ -612,6 +619,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite various-suite
   depends_on:
   - cypress
@@ -1068,7 +1076,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress yarn run cypress install
   depends_on:
   - package
   image: grafana/ci-e2e:12.19.0-1
@@ -1083,6 +1091,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-server
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite dashboards-suite --tries 3
   depends_on:
   - cypress
@@ -1091,6 +1100,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite smoke-tests-suite --tries 3
   depends_on:
   - cypress
@@ -1099,6 +1109,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite panels-suite --tries 3
   depends_on:
   - cypress
@@ -1107,6 +1118,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite various-suite --tries 3
   depends_on:
   - cypress
@@ -1520,7 +1532,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress yarn run cypress install
   depends_on:
   - package
   image: grafana/ci-e2e:12.19.0-1
@@ -1537,6 +1549,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-server
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite dashboards-suite --tries 3
   depends_on:
   - cypress
@@ -1545,6 +1558,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite smoke-tests-suite --tries 3
   depends_on:
   - cypress
@@ -1553,6 +1567,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite panels-suite --tries 3
   depends_on:
   - cypress
@@ -1561,6 +1576,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite various-suite --tries 3
   depends_on:
   - cypress
@@ -1674,6 +1690,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-server-enterprise2
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3002 --suite dashboards-suite --tries 3
   depends_on:
   - cypress
@@ -1682,6 +1699,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite-enterprise2
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3002 --suite smoke-tests-suite --tries 3
   depends_on:
   - cypress
@@ -1690,6 +1708,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite-enterprise2
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3002 --suite panels-suite --tries 3
   depends_on:
   - cypress
@@ -1698,6 +1717,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite-enterprise2
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3002 --suite various-suite --tries 3
   depends_on:
   - cypress
@@ -2106,7 +2126,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress yarn run cypress install
   depends_on:
   - package
   image: grafana/ci-e2e:12.19.0-1
@@ -2121,6 +2141,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-server
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite dashboards-suite --tries 3
   depends_on:
   - cypress
@@ -2129,6 +2150,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite smoke-tests-suite --tries 3
   depends_on:
   - cypress
@@ -2137,6 +2159,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite panels-suite --tries 3
   depends_on:
   - cypress
@@ -2145,6 +2168,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite various-suite --tries 3
   depends_on:
   - cypress
@@ -2547,7 +2571,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress yarn run cypress install
   depends_on:
   - package
   image: grafana/ci-e2e:12.19.0-1
@@ -2564,6 +2588,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-server
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite dashboards-suite --tries 3
   depends_on:
   - cypress
@@ -2572,6 +2597,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite smoke-tests-suite --tries 3
   depends_on:
   - cypress
@@ -2580,6 +2606,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite panels-suite --tries 3
   depends_on:
   - cypress
@@ -2588,6 +2615,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite various-suite --tries 3
   depends_on:
   - cypress
@@ -2693,6 +2721,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-server-enterprise2
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3002 --suite dashboards-suite --tries 3
   depends_on:
   - cypress
@@ -2701,6 +2730,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite-enterprise2
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3002 --suite smoke-tests-suite --tries 3
   depends_on:
   - cypress
@@ -2709,6 +2739,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite-enterprise2
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3002 --suite panels-suite --tries 3
   depends_on:
   - cypress
@@ -2717,6 +2748,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite-enterprise2
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3002 --suite various-suite --tries 3
   depends_on:
   - cypress
@@ -3128,7 +3160,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress yarn run cypress install
   depends_on:
   - package
   image: grafana/ci-e2e:12.19.0-1
@@ -3143,6 +3175,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-server
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite dashboards-suite --tries 3
   depends_on:
   - cypress
@@ -3151,6 +3184,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite smoke-tests-suite --tries 3
   depends_on:
   - cypress
@@ -3159,6 +3193,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite panels-suite --tries 3
   depends_on:
   - cypress
@@ -3167,6 +3202,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite various-suite --tries 3
   depends_on:
   - cypress
@@ -3536,7 +3572,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress yarn run cypress install
   depends_on:
   - package
   image: grafana/ci-e2e:12.19.0-1
@@ -3553,6 +3589,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-server
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite dashboards-suite --tries 3
   depends_on:
   - cypress
@@ -3561,6 +3598,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite smoke-tests-suite --tries 3
   depends_on:
   - cypress
@@ -3569,6 +3607,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite panels-suite --tries 3
   depends_on:
   - cypress
@@ -3577,6 +3616,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3001 --suite various-suite --tries 3
   depends_on:
   - cypress
@@ -3691,6 +3731,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-server-enterprise2
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3002 --suite dashboards-suite --tries 3
   depends_on:
   - cypress
@@ -3699,6 +3740,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite-enterprise2
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3002 --suite smoke-tests-suite --tries 3
   depends_on:
   - cypress
@@ -3707,6 +3749,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite-enterprise2
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3002 --suite panels-suite --tries 3
   depends_on:
   - cypress
@@ -3715,6 +3758,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite-enterprise2
 - commands:
+  - CYPRESS_CACHE_FOLDER=./tmp/Cypress
   - ./bin/grabpl e2e-tests --port 3002 --suite various-suite --tries 3
   depends_on:
   - cypress
@@ -3899,6 +3943,6 @@ kind: secret
 name: drone_token
 ---
 kind: signature
-hmac: 9d2a5f6285afbefdc98e8c07b05ca1623037828d5e87b8387331ad5f425e4d47
+hmac: 5efdf56ebfffce030faddbceb83154a5685c577a14c1509f2cb9d2c07082da57
 
 ...
