@@ -180,11 +180,9 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - CYPRESS_CACHE_FOLDER=/tmp/Cypress/8.4.1/Cypress/Cypress yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=/tmp/Cypress yarn run cypress install
   depends_on:
   - package
-  environment:
-    CYPRESS_INSTALL_BINARY: /tmp/Cypress
   image: grafana/ci-e2e:12.19.0-1
   name: cypress
 - commands:
@@ -201,7 +199,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
@@ -210,7 +207,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
@@ -219,7 +215,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
@@ -228,7 +223,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-various-suite
@@ -579,11 +573,9 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - CYPRESS_CACHE_FOLDER=/tmp/Cypress/8.4.1/Cypress/Cypress yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=/tmp/Cypress yarn run cypress install
   depends_on:
   - package
-  environment:
-    CYPRESS_INSTALL_BINARY: /tmp/Cypress
   image: grafana/ci-e2e:12.19.0-1
   name: cypress
 - commands:
@@ -600,7 +592,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
@@ -609,7 +600,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
@@ -618,7 +608,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
@@ -627,7 +616,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-various-suite
@@ -1080,11 +1068,9 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - CYPRESS_CACHE_FOLDER=/tmp/Cypress/8.4.1/Cypress/Cypress yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=/tmp/Cypress yarn run cypress install
   depends_on:
   - package
-  environment:
-    CYPRESS_INSTALL_BINARY: /tmp/Cypress
   image: grafana/ci-e2e:12.19.0-1
   name: cypress
 - commands:
@@ -1101,7 +1087,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
@@ -1110,7 +1095,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
@@ -1119,7 +1103,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
@@ -1128,7 +1111,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-various-suite
@@ -1538,11 +1520,9 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - CYPRESS_CACHE_FOLDER=/tmp/Cypress/8.4.1/Cypress/Cypress yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=/tmp/Cypress yarn run cypress install
   depends_on:
   - package
-  environment:
-    CYPRESS_INSTALL_BINARY: /tmp/Cypress
   image: grafana/ci-e2e:12.19.0-1
   name: cypress
 - commands:
@@ -1561,7 +1541,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
@@ -1570,7 +1549,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
@@ -1579,7 +1557,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
@@ -1588,7 +1565,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-various-suite
@@ -1702,7 +1678,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite-enterprise2
@@ -1711,7 +1686,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite-enterprise2
@@ -1720,7 +1694,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite-enterprise2
@@ -1729,7 +1702,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-various-suite-enterprise2
@@ -2134,11 +2106,9 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - CYPRESS_CACHE_FOLDER=/tmp/Cypress/8.4.1/Cypress/Cypress yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=/tmp/Cypress yarn run cypress install
   depends_on:
   - package
-  environment:
-    CYPRESS_INSTALL_BINARY: /tmp/Cypress
   image: grafana/ci-e2e:12.19.0-1
   name: cypress
 - commands:
@@ -2155,7 +2125,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
@@ -2164,7 +2133,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
@@ -2173,7 +2141,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
@@ -2182,7 +2149,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-various-suite
@@ -2581,11 +2547,9 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - CYPRESS_CACHE_FOLDER=/tmp/Cypress/8.4.1/Cypress/Cypress yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=/tmp/Cypress yarn run cypress install
   depends_on:
   - package
-  environment:
-    CYPRESS_INSTALL_BINARY: /tmp/Cypress
   image: grafana/ci-e2e:12.19.0-1
   name: cypress
 - commands:
@@ -2604,7 +2568,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
@@ -2613,7 +2576,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
@@ -2622,7 +2584,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
@@ -2631,7 +2592,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-various-suite
@@ -2737,7 +2697,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite-enterprise2
@@ -2746,7 +2705,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite-enterprise2
@@ -2755,7 +2713,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite-enterprise2
@@ -2764,7 +2721,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-various-suite-enterprise2
@@ -3172,11 +3128,9 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - CYPRESS_CACHE_FOLDER=/tmp/Cypress/8.4.1/Cypress/Cypress yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=/tmp/Cypress yarn run cypress install
   depends_on:
   - package
-  environment:
-    CYPRESS_INSTALL_BINARY: /tmp/Cypress
   image: grafana/ci-e2e:12.19.0-1
   name: cypress
 - commands:
@@ -3193,7 +3147,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
@@ -3202,7 +3155,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
@@ -3211,7 +3163,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
@@ -3220,7 +3171,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-various-suite
@@ -3586,11 +3536,9 @@ steps:
   image: grafana/build-container:1.4.6
   name: package
 - commands:
-  - CYPRESS_CACHE_FOLDER=/tmp/Cypress/8.4.1/Cypress/Cypress yarn run cypress install
+  - CYPRESS_CACHE_FOLDER=/tmp/Cypress yarn run cypress install
   depends_on:
   - package
-  environment:
-    CYPRESS_INSTALL_BINARY: /tmp/Cypress
   image: grafana/ci-e2e:12.19.0-1
   name: cypress
 - commands:
@@ -3609,7 +3557,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite
@@ -3618,7 +3565,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite
@@ -3627,7 +3573,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite
@@ -3636,7 +3581,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-various-suite
@@ -3751,7 +3695,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-dashboards-suite-enterprise2
@@ -3760,7 +3703,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-smoke-tests-suite-enterprise2
@@ -3769,7 +3711,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-panels-suite-enterprise2
@@ -3778,7 +3719,6 @@ steps:
   depends_on:
   - cypress
   environment:
-    CYPRESS_CACHE_FOLDER: /tmp/Cypress
     HOST: end-to-end-tests-server-enterprise2
   image: grafana/build-container:1.4.6
   name: end-to-end-tests-various-suite-enterprise2
@@ -3959,6 +3899,6 @@ kind: secret
 name: drone_token
 ---
 kind: signature
-hmac: a2fec81a0be84f4908375e0b7fbd7c257c7b3a9d4898841f72f089dd66672405
+hmac: 727fdd3f634ac3edfa21ac24ea641b196d49f6a19a1ae520c0a60e1a184d3363
 
 ...
