@@ -330,17 +330,17 @@ def build_frontend_step(edition, ver_mode, is_downstream=False):
     # TODO: Use percentage for num jobs
     if ver_mode == 'release':
         cmds = [
-            './bin/grabpl build-frontend --jobs 8 --github-token $${GITHUB_TOKEN} --no-install-deps ' + \
+            './bin/grabpl build-frontend --jobs 24 --github-token $${GITHUB_TOKEN} --no-install-deps ' + \
                 '--edition {} --no-pull-enterprise ${{DRONE_TAG}}'.format(edition),
         ]
     elif ver_mode == 'test-release':
         cmds = [
-            './bin/grabpl build-frontend --jobs 8 --github-token $${GITHUB_TOKEN} --no-install-deps ' + \
+            './bin/grabpl build-frontend --jobs 24 --github-token $${GITHUB_TOKEN} --no-install-deps ' + \
                 '--edition {} --no-pull-enterprise {}'.format(edition, test_release_ver),
             ]
     else:
         cmds = [
-            './bin/grabpl build-frontend --jobs 8 --no-install-deps --edition {} '.format(edition) + \
+            './bin/grabpl build-frontend --jobs 24 --no-install-deps --edition {} '.format(edition) + \
                 '--build-id {} --no-pull-enterprise'.format(build_no),
         ]
 

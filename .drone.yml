@@ -129,7 +129,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: build-backend
 - commands:
-  - ./bin/grabpl build-frontend --jobs 8 --no-install-deps --edition oss --build-id
+  - ./bin/grabpl build-frontend --jobs 24 --no-install-deps --edition oss --build-id
     ${DRONE_BUILD_NUMBER} --no-pull-enterprise
   depends_on:
   - initialize
@@ -510,7 +510,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: build-backend
 - commands:
-  - ./bin/grabpl build-frontend --jobs 8 --no-install-deps --edition oss --build-id
+  - ./bin/grabpl build-frontend --jobs 24 --no-install-deps --edition oss --build-id
     ${DRONE_BUILD_NUMBER} --no-pull-enterprise
   depends_on:
   - initialize
@@ -1005,7 +1005,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: build-backend
 - commands:
-  - ./bin/grabpl build-frontend --jobs 8 --github-token $${GITHUB_TOKEN} --no-install-deps
+  - ./bin/grabpl build-frontend --jobs 24 --github-token $${GITHUB_TOKEN} --no-install-deps
     --edition oss --no-pull-enterprise ${DRONE_TAG}
   depends_on:
   - initialize
@@ -1424,7 +1424,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: build-backend
 - commands:
-  - ./bin/grabpl build-frontend --jobs 8 --github-token $${GITHUB_TOKEN} --no-install-deps
+  - ./bin/grabpl build-frontend --jobs 24 --github-token $${GITHUB_TOKEN} --no-install-deps
     --edition enterprise --no-pull-enterprise ${DRONE_TAG}
   depends_on:
   - initialize
@@ -2043,7 +2043,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: build-backend
 - commands:
-  - ./bin/grabpl build-frontend --jobs 8 --github-token $${GITHUB_TOKEN} --no-install-deps
+  - ./bin/grabpl build-frontend --jobs 24 --github-token $${GITHUB_TOKEN} --no-install-deps
     --edition oss --no-pull-enterprise v7.3.0-test
   depends_on:
   - initialize
@@ -2451,7 +2451,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: build-backend
 - commands:
-  - ./bin/grabpl build-frontend --jobs 8 --github-token $${GITHUB_TOKEN} --no-install-deps
+  - ./bin/grabpl build-frontend --jobs 24 --github-token $${GITHUB_TOKEN} --no-install-deps
     --edition enterprise --no-pull-enterprise v7.3.0-test
   depends_on:
   - initialize
@@ -3065,7 +3065,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: build-backend
 - commands:
-  - ./bin/grabpl build-frontend --jobs 8 --no-install-deps --edition oss --build-id
+  - ./bin/grabpl build-frontend --jobs 24 --no-install-deps --edition oss --build-id
     ${DRONE_BUILD_NUMBER} --no-pull-enterprise
   depends_on:
   - initialize
@@ -3442,7 +3442,7 @@ steps:
   image: grafana/build-container:1.4.6
   name: build-backend
 - commands:
-  - ./bin/grabpl build-frontend --jobs 8 --no-install-deps --edition enterprise --build-id
+  - ./bin/grabpl build-frontend --jobs 24 --no-install-deps --edition enterprise --build-id
     ${DRONE_BUILD_NUMBER} --no-pull-enterprise
   depends_on:
   - initialize
@@ -3899,6 +3899,6 @@ kind: secret
 name: drone_token
 ---
 kind: signature
-hmac: 9d2a5f6285afbefdc98e8c07b05ca1623037828d5e87b8387331ad5f425e4d47
+hmac: 02321cb4e81472599563a3eb242916ba647aab1f77307426afd5fa8556065deb
 
 ...
