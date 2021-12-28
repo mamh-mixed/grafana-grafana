@@ -4345,7 +4345,7 @@ __metadata:
   resolution: "@grafana/aws-sdk@npm:0.0.35"
   checksum: c286e5ccaa58c73e6de58182f6f9bbdb08a31dda4a968d677159f62278ed0b9217a52c4027236404707cba79cff9f745b21e32d662cc12430637cfc794ea0f5d
   languageName: node
-  linkType: hard
+  linkType: soft
 
 "@grafana/data@9.0.0-pre, @grafana/data@workspace:*, @grafana/data@workspace:packages/grafana-data":
   version: 0.0.0-use.local
