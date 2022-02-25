@@ -137,6 +137,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-backend
 - commands:
+  - yarn add -D speed-measure-webpack-plugin
   - ./bin/grabpl build-frontend --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
     --no-pull-enterprise
   depends_on:
@@ -155,6 +156,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-frontend-packages
 - commands:
+  - yarn add -D speed-measure-webpack-plugin
   - ./bin/grabpl build-plugins --jobs 8 --edition oss
   depends_on:
   - initialize
@@ -666,6 +668,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-backend
 - commands:
+  - yarn add -D speed-measure-webpack-plugin
   - ./bin/grabpl build-frontend --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
     --no-pull-enterprise
   depends_on:
@@ -684,6 +687,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-frontend-packages
 - commands:
+  - yarn add -D speed-measure-webpack-plugin
   - ./bin/grabpl build-plugins --jobs 8 --edition oss --sign --signing-admin
   depends_on:
   - initialize
@@ -1292,6 +1296,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-frontend-packages
 - commands:
+  - yarn add -D speed-measure-webpack-plugin
   - ./bin/grabpl build-plugins --jobs 8 --edition oss --sign --signing-admin
   depends_on:
   - initialize
@@ -1886,6 +1891,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-frontend-packages
 - commands:
+  - yarn add -D speed-measure-webpack-plugin
   - ./bin/grabpl build-plugins --jobs 8 --edition enterprise --sign --signing-admin
   depends_on:
   - initialize
@@ -3036,6 +3042,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-backend
 - commands:
+  - yarn add -D speed-measure-webpack-plugin
   - ./bin/grabpl build-frontend --jobs 8 --edition oss --build-id ${DRONE_BUILD_NUMBER}
     --no-pull-enterprise
   depends_on:
@@ -3054,6 +3061,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-frontend-packages
 - commands:
+  - yarn add -D speed-measure-webpack-plugin
   - ./bin/grabpl build-plugins --jobs 8 --edition oss --sign --signing-admin
   depends_on:
   - initialize
@@ -3557,6 +3565,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-backend
 - commands:
+  - yarn add -D speed-measure-webpack-plugin
   - ./bin/grabpl build-frontend --jobs 8 --edition enterprise --build-id ${DRONE_BUILD_NUMBER}
     --no-pull-enterprise
   depends_on:
@@ -3575,6 +3584,7 @@ steps:
   image: grafana/build-container:1.5.1
   name: build-frontend-packages
 - commands:
+  - yarn add -D speed-measure-webpack-plugin
   - ./bin/grabpl build-plugins --jobs 8 --edition enterprise --sign --signing-admin
   depends_on:
   - initialize
@@ -4330,6 +4340,6 @@ kind: secret
 name: gcp_upload_artifacts_key
 ---
 kind: signature
-hmac: f8445040a37308e4bf836c7cc0756dcd56a7355eb52e2e47bcb186aa58d47b8f
+hmac: c2043ea3504f94567e90b435760db0913bc2925d68f7f57f48fec94e1a7fc83d
 
 ...
