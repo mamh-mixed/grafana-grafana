@@ -1,9 +1,9 @@
 +++
-title = "Notification policies"
+aliases = ["/docs/grafana/latest/alerting/notifications/", "/docs/grafana/latest/alerting/unified-alerting/notifications/"]
 description = "Notification policies"
 keywords = ["grafana", "alerting", "guide", "notification policies", "routes"]
+title = "Notification policies"
 weight = 450
-aliases = ["/docs/grafana/latest/alerting/unified-alerting/notifications/"]
 +++
 
 # Notification policies
