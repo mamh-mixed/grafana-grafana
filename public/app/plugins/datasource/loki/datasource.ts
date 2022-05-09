@@ -169,10 +169,13 @@ export class LokiDatasource
     };
 
     if (config.featureToggles.lokiBackendMode) {
-      // we "fix" the loki queries to have `.queryType` and not have `.instant` and `.range`
+      const queries = request.targets
+        .map(getNormalizedLokiQuery) // "fix" the `.queryType` prop
+        .map((q) => ({ ...q, maxLines: q.maxLines || this.maxLines })); // set maxLines if not set
+
       const fixedRequest = {
         ...request,
-        targets: request.targets.map(getNormalizedLokiQuery),
+        targets: queries,
       };
 
       if (fixedRequest.liveStreaming) {
