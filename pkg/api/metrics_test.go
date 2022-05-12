@@ -10,13 +10,16 @@ import (
 	"testing"
 
 	acmock "github.com/grafana/grafana/pkg/services/accesscontrol/mock"
+	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
-	"github.com/grafana/grafana/pkg/services/sqlstore/mockstore"
 	"github.com/grafana/grafana/pkg/web/webtest"
 
 	"golang.org/x/oauth2"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/plugins"
@@ -26,8 +29,6 @@ import (
 	"github.com/grafana/grafana/pkg/services/secrets/fakes"
 	"github.com/grafana/grafana/pkg/services/secrets/kvstore"
 	secretsManager "github.com/grafana/grafana/pkg/services/secrets/manager"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -222,15 +223,18 @@ func TestAPIEndpoint_Metrics_QueryMetricsFromDashboard(t *testing.T) {
 		t.Fatalf("Failed to unmarshal dashboard json: %v", err)
 	}
 
-	mockDb := sc.hs.SQLStore.(*mockstore.SQLStoreMock)
-
 	t.Run("Can query a valid dashboard", func(t *testing.T) {
-		mockDb.ExpectedDashboard = &models.Dashboard{
-			Uid:   "1",
-			OrgId: testOrgID,
-			Data:  dashboardJson,
+		dashboardSvc := &dashboards.FakeDashboardService{
+			GetDashboardFn: func(ctx context.Context, cmd *models.GetDashboardQuery) error {
+				cmd.Result = &models.Dashboard{
+					Uid:   "1",
+					OrgId: testOrgID,
+					Data:  dashboardJson,
+				}
+				return nil
+			},
 		}
-		mockDb.ExpectedError = nil
+		sc.hs.dashboardService = dashboardSvc
 
 		response := callAPI(
 			sc.server,
@@ -243,9 +247,6 @@ func TestAPIEndpoint_Metrics_QueryMetricsFromDashboard(t *testing.T) {
 	})
 
 	t.Run("Cannot query without a valid orgid or dashboard or panel ID", func(t *testing.T) {
-		mockDb.ExpectedDashboard = nil
-		mockDb.ExpectedError = models.ErrDashboardOrPanelIdentifierNotSet
-
 		response := callAPI(
 			sc.server,
 			http.MethodPost,
@@ -398,18 +399,20 @@ func TestAPIEndpoint_Metrics_checkDashboardAndPanel(t *testing.T) {
 		},
 	}
 
-	ss := mockstore.NewSQLStoreMock()
+	svc := &dashboards.FakeDashboardService{}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			ss.ExpectedDashboard = test.dashboardQueryResult
-			ss.ExpectedError = test.expectedError
-
 			query := models.GetDashboardQuery{
 				OrgId: test.orgId,
 				Uid:   test.dashboardUid,
 			}
 
-			assert.Equal(t, test.expectedError, checkDashboardAndPanel(context.Background(), ss, query, test.panelId))
+			svc.GetDashboardFn = func(ctx context.Context, cmd *models.GetDashboardQuery) error {
+				cmd.Result = test.dashboardQueryResult
+				return test.expectedError
+			}
+
+			assert.Equal(t, test.expectedError, checkDashboardAndPanel(context.Background(), svc, query, test.panelId))
 		})
 	}
 }

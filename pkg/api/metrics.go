@@ -7,13 +7,14 @@ import (
 	"strconv"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+
 	"github.com/grafana/grafana/pkg/api/dtos"
 	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
+	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/query"
-	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/tsdb/legacydata"
 	"github.com/grafana/grafana/pkg/util"
 	"github.com/grafana/grafana/pkg/web"
@@ -76,9 +77,9 @@ func parseDashboardQueryParams(params map[string]string) (models.GetDashboardQue
 	return query, panelId, nil
 }
 
-func checkDashboardAndPanel(ctx context.Context, ss sqlstore.Store, query models.GetDashboardQuery, panelId int64) error {
+func checkDashboardAndPanel(ctx context.Context, svc dashboards.DashboardService, query models.GetDashboardQuery, panelId int64) error {
 	// Query the dashboard
-	if err := ss.GetDashboard(ctx, &query); err != nil {
+	if err := svc.GetDashboard(ctx, &query); err != nil {
 		return err
 	}
 
@@ -129,7 +130,7 @@ func (hs *HTTPServer) QueryMetricsFromDashboard(c *models.ReqContext) response.R
 	// check dashboard: inside the statement is the happy path. we should maybe
 	// refactor this as it's not super obvious
 	if err == nil {
-		err = checkDashboardAndPanel(c.Req.Context(), hs.SQLStore, getDashboardQuery, panelId)
+		err = checkDashboardAndPanel(c.Req.Context(), hs.dashboardService, getDashboardQuery, panelId)
 	}
 
 	// 404 if dashboard or panel not found
