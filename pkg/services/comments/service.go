@@ -13,12 +13,11 @@ import (
 )
 
 type Service struct {
-	cfg              *setting.Cfg
-	live             *live.GrafanaLive
-	sqlStore         *sqlstore.SQLStore
-	storage          Storage
-	permissions      *commentmodel.PermissionChecker
-	dashboardService dashboards.DashboardService
+	cfg         *setting.Cfg
+	live        *live.GrafanaLive
+	sqlStore    *sqlstore.SQLStore
+	storage     Storage
+	permissions *commentmodel.PermissionChecker
 }
 
 func ProvideService(cfg *setting.Cfg, store *sqlstore.SQLStore, live *live.GrafanaLive,
