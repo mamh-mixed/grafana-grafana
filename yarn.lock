@@ -4340,11 +4340,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@grafana/aws-sdk@portal:/home/erik/code/grafana/grafana-aws-sdk-react::locator=grafana%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "@grafana/aws-sdk@portal:/home/erik/code/grafana/grafana-aws-sdk-react::locator=grafana%40workspace%3A."
+"@grafana/aws-sdk@npm:0.0.36":
+  version: 0.0.36
+  resolution: "@grafana/aws-sdk@npm:0.0.36"
+  checksum: c243f7c900551e98fd23ef805e983d7db3180992e652ef9ad656acc74ac1c1e779e9b500db08a39d5cd0bc02fdb584e4c7dd89be8546e115ae12c085773cd212
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "@grafana/data@9.0.0-pre, @grafana/data@workspace:*, @grafana/data@workspace:packages/grafana-data":
   version: 0.0.0-use.local
@@ -21086,7 +21087,7 @@ __metadata:
     "@emotion/eslint-plugin": 11.7.0
     "@emotion/react": 11.9.0
     "@grafana/api-documenter": 7.11.2
-    "@grafana/aws-sdk": 0.0.35
+    "@grafana/aws-sdk": 0.0.36
     "@grafana/data": "workspace:*"
     "@grafana/e2e": "workspace:*"
     "@grafana/e2e-selectors": "workspace:*"

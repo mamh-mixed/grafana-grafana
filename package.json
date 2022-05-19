@@ -248,7 +248,7 @@
   "dependencies": {
     "@emotion/css": "11.9.0",
     "@emotion/react": "11.9.0",
-    "@grafana/aws-sdk": "0.0.35",
+    "@grafana/aws-sdk": "0.0.36",
     "@grafana/data": "workspace:*",
     "@grafana/e2e-selectors": "workspace:*",
     "@grafana/experimental": "^0.0.2-canary.30",
@@ -401,8 +401,7 @@
     "@rushstack/rig-package": "0.3.8",
     "@rushstack/ts-command-line": "4.11.0",
     "@storybook/react/webpack": "5.72.0",
-    "node-fetch": "2.6.7",
-    "@grafana/aws-sdk": "portal:/home/erik/code/grafana/grafana-aws-sdk-react"
+    "node-fetch": "2.6.7"
   },
   "workspaces": {
     "packages": [
