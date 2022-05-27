@@ -48,7 +48,7 @@ With Grafana Enterprise [enhanced LDAP]({{< relref "enhanced_ldap.md" >}}), you 
 
 ### SAML authentication
 
-[SAML authentication]({{< relref "./saml" >}}) enables your Grafana Enterprise users to authenticate with SAML.
+[SAML authentication]({{< relref "./configure-saml" >}}) enables users to authenticate with single sign-on services that use Security Assertion Markup Language (SAML).
 
 ## Enterprise features
 
