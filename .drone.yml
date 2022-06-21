@@ -134,7 +134,7 @@ steps:
   image: grafana/build-container:1.5.5
   name: shellcheck
 - commands:
-  - ./bin/grabpl lint-backend --edition oss
+  - make lint-go
   depends_on:
   - wire-install
   environment:
@@ -825,7 +825,7 @@ steps:
   image: grafana/build-container:1.5.5
   name: shellcheck
 - commands:
-  - ./bin/grabpl lint-backend --edition oss
+  - make lint-go
   depends_on:
   - wire-install
   environment:
@@ -1905,7 +1905,7 @@ steps:
   image: grafana/build-container:1.5.5
   name: codespell
 - commands:
-  - ./bin/grabpl lint-backend --edition oss
+  - make lint-go
   depends_on:
   - wire-install
   environment:
@@ -2565,7 +2565,7 @@ steps:
   image: grafana/build-container:1.5.5
   name: codespell
 - commands:
-  - ./bin/grabpl lint-backend --edition enterprise
+  - make lint-go
   depends_on:
   - wire-install
   environment:
@@ -2604,7 +2604,7 @@ steps:
   image: grafana/build-container:1.5.5
   name: test-frontend
 - commands:
-  - ./bin/grabpl lint-backend --edition enterprise2
+  - make lint-go
   depends_on:
   - wire-install
   environment:
@@ -2759,7 +2759,7 @@ steps:
   - dockerize -wait tcp://redis:6379/0 -timeout 120s
   - ./bin/grabpl integration-tests
   depends_on:
-  - wire-install
+  - init-enterprise
   environment:
     REDIS_URL: redis://redis:6379/0
   image: grafana/build-container:1.5.5
@@ -2768,7 +2768,7 @@ steps:
   - dockerize -wait tcp://memcached:11211 -timeout 120s
   - ./bin/grabpl integration-tests
   depends_on:
-  - wire-install
+  - init-enterprise
   environment:
     MEMCACHED_HOSTS: memcached:11211
   image: grafana/build-container:1.5.5
@@ -3718,7 +3718,7 @@ steps:
   image: grafana/build-container:1.5.5
   name: codespell
 - commands:
-  - ./bin/grabpl lint-backend --edition oss
+  - make lint-go
   depends_on:
   - wire-install
   environment:
@@ -4350,7 +4350,7 @@ steps:
   image: grafana/build-container:1.5.5
   name: codespell
 - commands:
-  - ./bin/grabpl lint-backend --edition enterprise
+  - make lint-go
   depends_on:
   - wire-install
   environment:
@@ -4389,7 +4389,7 @@ steps:
   image: grafana/build-container:1.5.5
   name: test-frontend
 - commands:
-  - ./bin/grabpl lint-backend --edition enterprise2
+  - make lint-go
   depends_on:
   - wire-install
   environment:
@@ -4535,7 +4535,7 @@ steps:
   - dockerize -wait tcp://redis:6379/0 -timeout 120s
   - ./bin/grabpl integration-tests
   depends_on:
-  - wire-install
+  - init-enterprise
   environment:
     REDIS_URL: redis://redis:6379/0
   image: grafana/build-container:1.5.5
@@ -4544,7 +4544,7 @@ steps:
   - dockerize -wait tcp://memcached:11211 -timeout 120s
   - ./bin/grabpl integration-tests
   depends_on:
-  - wire-install
+  - init-enterprise
   environment:
     MEMCACHED_HOSTS: memcached:11211
   image: grafana/build-container:1.5.5
@@ -4783,6 +4783,6 @@ kind: secret
 name: gcp_upload_artifacts_key
 ---
 kind: signature
-hmac: 08a56614966ee32df00d5dbd4f6b51a8606e6e6cf90976e5fb42c8697f505802
+hmac: 99de74d7b9a348776fd3bb12ebb3d35266dd93d789ad4e56e928d1d4f3972af6
 
 ...

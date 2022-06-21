@@ -230,7 +230,7 @@ def lint_backend_step(edition):
         ],
         'commands': [
             # Don't use Make since it will re-download the linters
-            './bin/grabpl lint-backend --edition {}'.format(edition),
+            'make lint-go',
         ],
     }
 
@@ -908,7 +908,7 @@ def redis_integration_tests_step():
     return {
         'name': 'redis-integration-tests',
         'image': build_image,
-        'depends_on': ['wire-install'],
+        'depends_on': ['init-enterprise'],
         'environment': {
             'REDIS_URL': 'redis://redis:6379/0',
         },
@@ -923,7 +923,7 @@ def memcached_integration_tests_step():
     return {
         'name': 'memcached-integration-tests',
         'image': build_image,
-        'depends_on': ['wire-install'],
+        'depends_on': ['init-enterprise'],
         'environment': {
             'MEMCACHED_HOSTS': 'memcached:11211',
         },
