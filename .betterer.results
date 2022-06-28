@@ -1509,7 +1509,7 @@ exports[`better eslint`] = {
       [16, 22, 3, "Unexpected any. Specify a different type.", "193409811"],
       [25, 22, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
-    "packages/grafana-ui/src/components/ColorPicker/ColorPickerPopover.tsx:3402880420": [
+    "packages/grafana-ui/src/components/ColorPicker/ColorPickerPopover.tsx:504032430": [
       [52, 25, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
     "packages/grafana-ui/src/components/ColorPicker/NamedColorsPalette.story.tsx:3944449467": [
@@ -1773,7 +1773,7 @@ exports[`better eslint`] = {
     "packages/grafana-ui/src/components/Graph/utils.ts:3619837376": [
       [104, 56, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
-    "packages/grafana-ui/src/components/GraphNG/GraphNG.tsx:94669281": [
+    "packages/grafana-ui/src/components/GraphNG/GraphNG.tsx:1910203563": [
       [38, 33, 3, "Unexpected any. Specify a different type.", "193409811"],
       [38, 39, 3, "Unexpected any. Specify a different type.", "193409811"],
       [65, 27, 3, "Unexpected any. Specify a different type.", "193409811"],
@@ -1902,7 +1902,7 @@ exports[`better eslint`] = {
     "packages/grafana-ui/src/components/Modal/Modal.story.tsx:565397573": [
       [13, 15, 1541, "Do not use any type assertions.", "3915944431"]
     ],
-    "packages/grafana-ui/src/components/Modal/ModalsContext.tsx:2265308334": [
+    "packages/grafana-ui/src/components/Modal/ModalsContext.tsx:1594507076": [
       [3, 33, 3, "Unexpected any. Specify a different type.", "193409811"],
       [4, 9, 3, "Unexpected any. Specify a different type.", "193409811"],
       [19, 34, 3, "Unexpected any. Specify a different type.", "193409811"],
@@ -2041,8 +2041,8 @@ exports[`better eslint`] = {
     "packages/grafana-ui/src/components/Select/SingleValue.tsx:1080061765": [
       [70, 15, 36, "Do not use any type assertions.", "2686049678"]
     ],
-    "packages/grafana-ui/src/components/Select/ValueContainer.tsx:2056628020": [
-      [9, 53, 3, "Unexpected any. Specify a different type.", "193409811"]
+    "packages/grafana-ui/src/components/Select/ValueContainer.tsx:3724174680": [
+      [9, 47, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
     "packages/grafana-ui/src/components/Select/resetSelectStyles.ts:4134211333": [
       [49, 25, 3, "Unexpected any. Specify a different type.", "193409811"],
@@ -2265,7 +2265,7 @@ exports[`better eslint`] = {
       [171, 48, 16, "Do not use any type assertions.", "1966598126"],
       [171, 61, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
-    "packages/grafana-ui/src/components/TimeSeries/TimeSeries.tsx:2866260042": [
+    "packages/grafana-ui/src/components/TimeSeries/TimeSeries.tsx:808766912": [
       [20, 31, 18, "Do not use any type assertions.", "3890263992"],
       [23, 31, 28, "Do not use any type assertions.", "4099457225"],
       [56, 22, 24, "Do not use any type assertions.", "4121028738"],
@@ -2285,7 +2285,7 @@ exports[`better eslint`] = {
       [70, 17, 3, "Unexpected any. Specify a different type.", "193409811"],
       [119, 23, 16, "Do not use any type assertions.", "1396449744"]
     ],
-    "packages/grafana-ui/src/components/Tooltip/PopoverController.tsx:4009959390": [
+    "packages/grafana-ui/src/components/Tooltip/PopoverController.tsx:835763225": [
       [28, 23, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
     "packages/grafana-ui/src/components/Tooltip/Tooltip.tsx:3266011374": [
@@ -2335,7 +2335,7 @@ exports[`better eslint`] = {
       [58, 19, 17, "Do not use any type assertions.", "2676113316"],
       [157, 27, 17, "Do not use any type assertions.", "2676113316"]
     ],
-    "packages/grafana-ui/src/components/uPlot/Plot.tsx:3438512557": [
+    "packages/grafana-ui/src/components/uPlot/Plot.tsx:3357045441": [
       [70, 10, 6, "Do not use any type assertions.", "3800737431"],
       [75, 35, 30, "Do not use any type assertions.", "911619603"],
       [103, 20, 30, "Do not use any type assertions.", "911619603"]
@@ -2559,7 +2559,7 @@ exports[`better eslint`] = {
     "packages/grafana-ui/src/utils/storybook/ThemedDocsContainer.tsx:1765035789": [
       [9, 11, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
-    "packages/grafana-ui/src/utils/storybook/UseState.tsx:2528204858": [
+    "packages/grafana-ui/src/utils/storybook/UseState.tsx:658285712": [
       [18, 79, 3, "Unexpected any. Specify a different type.", "193409811"],
       [18, 98, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
