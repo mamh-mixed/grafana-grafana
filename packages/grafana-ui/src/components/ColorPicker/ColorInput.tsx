@@ -1,6 +1,6 @@
 import { cx, css } from '@emotion/css';
 import { debounce } from 'lodash';
-import React from 'react';
+import React, { PureComponent } from 'react';
 import tinycolor from 'tinycolor2';
 
 import { GrafanaTheme2 } from '@grafana/data';
@@ -20,7 +20,7 @@ interface ColorInputProps extends ColorPickerProps {
   className?: string;
 }
 
-class ColorInput extends React.PureComponent<ColorInputProps, ColorInputState> {
+class ColorInput extends PureComponent<ColorInputProps, ColorInputState> {
   constructor(props: ColorInputProps) {
     super(props);
     this.state = {

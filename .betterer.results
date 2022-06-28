@@ -1482,7 +1482,7 @@ exports[`better eslint`] = {
     "packages/grafana-ui/src/components/Cascader/Cascader.story.tsx:1208428555": [
       [36, 15, 517, "Do not use any type assertions.", "3207763786"]
     ],
-    "packages/grafana-ui/src/components/Cascader/Cascader.tsx:2727767858": [
+    "packages/grafana-ui/src/components/Cascader/Cascader.tsx:3331076010": [
       [51, 9, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
     "packages/grafana-ui/src/components/Cascader/optionMappings.ts:3559380302": [
@@ -1939,7 +1939,7 @@ exports[`better eslint`] = {
       [105, 21, 3, "Unexpected any. Specify a different type.", "193409811"],
       [114, 21, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
-    "packages/grafana-ui/src/components/QueryField/QueryField.tsx:2052418451": [
+    "packages/grafana-ui/src/components/QueryField/QueryField.tsx:696918381": [
       [44, 59, 3, "Unexpected any. Specify a different type.", "193409811"],
       [44, 67, 3, "Unexpected any. Specify a different type.", "193409811"],
       [75, 55, 3, "Unexpected any. Specify a different type.", "193409811"]
@@ -2243,7 +2243,7 @@ exports[`better eslint`] = {
     "packages/grafana-ui/src/components/TableInputCSV/TableInputCSV.story.internal.tsx:2990998239": [
       [10, 15, 106, "Do not use any type assertions.", "4215296854"]
     ],
-    "packages/grafana-ui/src/components/TableInputCSV/TableInputCSV.tsx:3877918625": [
+    "packages/grafana-ui/src/components/TableInputCSV/TableInputCSV.tsx:2056872441": [
       [38, 11, 3, "Unexpected any. Specify a different type.", "193409811"],
       [62, 25, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
