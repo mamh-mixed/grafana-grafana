@@ -1,9 +1,9 @@
 import { of } from 'rxjs';
-import { BackendSrv, BackendSrvRequest } from 'src/services';
 
 import { DataQueryRequest, DataSourceRef } from '@grafana/data';
+import { BackendSrvRequest } from '@grafana/runtime';
 
-import { PublicDashboardDataSource } from '../../../../public/app/features/dashboard/services/PublicDashboardDataSource';
+import { PublicDashboardDataSource } from './PublicDashboardDataSource';
 
 const mockDatasourceRequest = jest.fn();
 
@@ -11,10 +11,10 @@ const backendSrv = {
   fetch: (options: BackendSrvRequest) => {
     return of(mockDatasourceRequest(options));
   },
-} as unknown as BackendSrv;
+};
 
-jest.mock('../services', () => ({
-  ...jest.requireActual('../services'),
+jest.mock('@grafana/runtime', () => ({
+  ...jest.requireActual('@grafana/runtime'),
   getBackendSrv: () => backendSrv,
   getDataSourceSrv: () => {
     return {
@@ -31,14 +31,15 @@ describe('PublicDashboardDatasource', () => {
     const ds = new PublicDashboardDataSource();
     const panelId = 1;
     const publicDashboardAccessToken = 'abc123';
+    const query = jest.mocked({} as DataQueryRequest);
 
-    ds.query({
-      maxDataPoints: 10,
-      intervalMs: 5000,
-      targets: [{ refId: 'A' }, { refId: 'B', datasource: { type: 'sample' } }],
-      panelId,
-      publicDashboardAccessToken,
-    } as DataQueryRequest);
+    query.maxDataPoints = 10;
+    query.intervalMs = 5000;
+    query.targets = [{ refId: 'A' }, { refId: 'B', datasource: { type: 'sample' } }];
+    query.panelId = panelId;
+    query.publicDashboardAccessToken = publicDashboardAccessToken;
+
+    ds.query(query);
 
     const mock = mockDatasourceRequest.mock;
 
