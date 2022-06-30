@@ -1384,9 +1384,6 @@ exports[`better eslint`] = {
       [3, 22, 9, "Do not use any type assertions.", "3692209159"],
       [3, 28, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
-    "packages/grafana-toolkit/src/cli/tasks/toolkit.build.ts:2695690981": [
-      [37, 35, 3, "Unexpected any. Specify a different type.", "193409811"]
-    ],
     "packages/grafana-toolkit/src/cli/utils/githubRelease.ts:3386958157": [
       [75, 41, 3, "Unexpected any. Specify a different type.", "193409811"],
       [81, 21, 3, "Unexpected any. Specify a different type.", "193409811"],
