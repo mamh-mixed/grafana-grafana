@@ -10878,15 +10878,15 @@ exports[`better eslint`] = {
     "public/app/plugins/panel/barchart/TickSpacingEditor.tsx:335508426": [
       [28, 69, 3, "Unexpected any. Specify a different type.", "193409811"]
     ],
-    "public/app/plugins/panel/barchart/bars.ts:2102161654": [
+    "public/app/plugins/panel/barchart/bars.ts:1209652323": [
       [50, 58, 3, "Unexpected any. Specify a different type.", "193409811"],
       [52, 42, 3, "Unexpected any. Specify a different type.", "193409811"],
-      [408, 7, 17, "Do not use any type assertions.", "3632921021"],
-      [463, 23, 11, "Do not use any type assertions.", "319541530"],
-      [463, 31, 3, "Unexpected any. Specify a different type.", "193409811"],
-      [465, 23, 11, "Do not use any type assertions.", "319541530"],
-      [465, 31, 3, "Unexpected any. Specify a different type.", "193409811"],
-      [473, 22, 33, "Do not use any type assertions.", "3146060940"]
+      [413, 7, 17, "Do not use any type assertions.", "3632921021"],
+      [468, 23, 11, "Do not use any type assertions.", "319541530"],
+      [468, 31, 3, "Unexpected any. Specify a different type.", "193409811"],
+      [470, 23, 11, "Do not use any type assertions.", "319541530"],
+      [470, 31, 3, "Unexpected any. Specify a different type.", "193409811"],
+      [478, 22, 33, "Do not use any type assertions.", "3146060940"]
     ],
     "public/app/plugins/panel/barchart/module.tsx:780565076": [
       [70, 95, 9, "Do not use any type assertions.", "3692209159"],
