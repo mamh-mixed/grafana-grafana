@@ -169,6 +169,7 @@ func (ss *SQLStore) AddDataSource(ctx context.Context, cmd *datasources.AddDataS
 			BasicAuth:       cmd.BasicAuth,
 			BasicAuthUser:   cmd.BasicAuthUser,
 			WithCredentials: cmd.WithCredentials,
+			Correlations:    cmd.Correlations,
 			JsonData:        cmd.JsonData,
 			SecureJsonData:  cmd.EncryptedSecureJsonData,
 			Created:         time.Now(),
