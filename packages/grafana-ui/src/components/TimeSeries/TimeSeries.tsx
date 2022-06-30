@@ -3,9 +3,8 @@ import React, { Component } from 'react';
 import { DataFrame, TimeRange } from '@grafana/data';
 import { LegendDisplayMode } from '@grafana/schema';
 
-import { PropDiffFn } from '../../../../../packages/grafana-ui/src/components/GraphNG/GraphNG';
 import { withTheme2 } from '../../themes/ThemeContext';
-import { GraphNG, GraphNGProps } from '../GraphNG/GraphNG';
+import { GraphNG, GraphNGProps, PropDiffFn } from '../GraphNG/GraphNG';
 import { PanelContext, PanelContextRoot } from '../PanelChrome/PanelContext';
 import { PlotLegend } from '../uPlot/PlotLegend';
 import { UPlotConfigBuilder } from '../uPlot/config/UPlotConfigBuilder';

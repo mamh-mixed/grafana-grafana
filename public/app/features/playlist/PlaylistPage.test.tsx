@@ -1,9 +1,8 @@
 import { render, waitFor } from '@testing-library/react';
 import React from 'react';
 
+import { locationService } from '@grafana/runtime';
 import { contextSrv } from 'app/core/services/context_srv';
-
-import { locationService } from '../../../../packages/grafana-runtime/src';
 
 import { PlaylistPage, PlaylistPageProps } from './PlaylistPage';
 
