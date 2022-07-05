@@ -201,13 +201,18 @@ export const urlUtil = {
  *
  * @param urlState
  * @param compact this parameter is deprecated and will be removed in a future release.
+ * @param encode
  */
-export function serializeStateToUrlParam(urlState: ExploreUrlState, compact?: boolean): string {
+export function serializeStateToUrlParam(urlState: ExploreUrlState, encode = false, compact?: boolean): string {
   if (compact !== undefined) {
     console.warn('`compact` parameter is deprecated and will be removed in a future release');
   }
 
-  return encodeURIComponent(JSON.stringify(urlState)).replace(/[!'()*]/g, function (c) {
-    return '%' + c.charCodeAt(0).toString(16).toUpperCase();
-  });
+  if (encode) {
+    return encodeURIComponent(JSON.stringify(urlState)).replace(/[!'()*]/g, function (c) {
+      return '%' + c.charCodeAt(0).toString(16).toUpperCase();
+    });
+  }
+
+  return JSON.stringify(urlState);
 }
