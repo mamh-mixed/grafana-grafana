@@ -1,4 +1,5 @@
 export * from './constants';
+export * from './correlations';
 export * from './data';
 export * from './dataFrame';
 export * from './dataFrameTypes';

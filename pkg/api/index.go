@@ -261,6 +261,12 @@ func (hs *HTTPServer) getNavTree(c *models.ReqContext, hasEditPerm bool, prefs *
 			Description: "Add and configure data sources",
 			Id:          "datasources",
 			Url:         hs.Cfg.AppSubURL + "/datasources",
+		}, &dtos.NavLink{
+			Text:        "Correlations",
+			Icon:        "database",
+			Description: "Add and configure correlations",
+			Id:          "correlations",
+			Url:         hs.Cfg.AppSubURL + "/datasources/correlations",
 		})
 	}
 
