@@ -1,5 +1,6 @@
 export interface Correlation {
-  target: string;
+  sourceUID: string;
+  targetUID: string;
   label?: string;
   description?: string;
   // TODO: options

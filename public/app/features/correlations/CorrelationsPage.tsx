@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { CellProps, SortByFn } from 'react-table';
 
-import { DataSourceInstanceSettings, GrafanaTheme2 } from '@grafana/data';
+import { GrafanaTheme2 } from '@grafana/data';
 import { AnotherTable, Button, DeleteButton, HorizontalGroup, useStyles2 } from '@grafana/ui';
 import { Column } from '@grafana/ui/src/components/AnotherTable';
 import EmptyListCTA from 'app/core/components/EmptyListCTA/EmptyListCTA';
@@ -12,7 +12,7 @@ import { useNavModel } from '../../core/hooks/useNavModel';
 
 import { AddCorrelationForm } from './AddCorrelationForm';
 import { CorrelationDetailsFormPart } from './CorrelationDetailsFormPart';
-import { useCorrelations } from './useCorrelations';
+import { CorrelationData, useCorrelations } from './useCorrelations';
 
 const styles = {
   table: css`
@@ -20,14 +20,7 @@ const styles = {
   `,
 };
 
-interface TableData {
-  source: DataSourceInstanceSettings;
-  target: DataSourceInstanceSettings;
-  label?: string;
-  description?: string;
-}
-
-const sortDatasource: SortByFn<TableData> = (a, b, column) =>
+const sortDatasource: SortByFn<CorrelationData> = (a, b, column) =>
   a.values[column].name.localeCompare(b.values[column].name);
 
 export default function CorrelationsPage() {
@@ -40,11 +33,11 @@ export default function CorrelationsPage() {
       row: {
         original: { source, target },
       },
-    }: CellProps<TableData, void>) => <DeleteButton onConfirm={() => remove(source.uid, target.uid)} />,
+    }: CellProps<CorrelationData, void>) => <DeleteButton onConfirm={() => remove(source.uid, target.uid)} />,
     [remove]
   );
 
-  const columns = useMemo<Array<Column<TableData>>>(
+  const columns = useMemo<Array<Column<CorrelationData>>>(
     () => [
       {
         id: 'source',
@@ -66,11 +59,15 @@ export default function CorrelationsPage() {
 
   const data = useMemo(() => correlations, [correlations]);
 
+  if (!data) {
+    return null;
+  }
+
   return (
     <>
       <Page navModel={navModel}>
         <Page.Contents>
-          {correlations.length === 0 && !isAdding && (
+          {data.length === 0 && !isAdding && (
             <EmptyListCTA
               title="You haven't defined any correlation yet."
               buttonIcon="sitemap"
@@ -79,7 +76,7 @@ export default function CorrelationsPage() {
             />
           )}
 
-          {correlations.length >= 1 && (
+          {data.length >= 1 && (
             <div>
               <HorizontalGroup justify="space-between">
                 <div>
@@ -95,7 +92,7 @@ export default function CorrelationsPage() {
 
           {isAdding && <AddCorrelationForm onClose={() => setIsAdding(false)} onSubmit={add} />}
 
-          {correlations.length >= 1 && (
+          {data.length >= 1 && (
             <AnotherTable
               renderExpandedRow={(row) => <CorrelationDetailsFormPart />}
               columns={columns}
@@ -123,7 +120,9 @@ const getDatasourceCellStyles = (theme: GrafanaTheme2) => ({
 });
 
 const DataSourceCell = memo(
-  function DataSourceCell({ cell: { value } }: CellProps<TableData, TableData['source'] | TableData['target']>) {
+  function DataSourceCell({
+    cell: { value },
+  }: CellProps<CorrelationData, CorrelationData['source'] | CorrelationData['target']>) {
     const styles = useStyles2(getDatasourceCellStyles);
 
     return (

@@ -28,7 +28,7 @@ interface FormDTO {
 
 interface Props {
   onClose: () => void;
-  onSubmit: (sourceUid: string, correlation: Correlation) => Promise<void>;
+  onSubmit: (correlation: Correlation) => void;
 }
 
 export const AddCorrelationForm = ({ onClose, onSubmit: externalSubmit }: Props) => {
@@ -36,9 +36,7 @@ export const AddCorrelationForm = ({ onClose, onSubmit: externalSubmit }: Props)
   const { handleSubmit, control } = useForm<FormDTO>();
 
   const onSubmit = handleSubmit(async (e) => {
-    console.log(e);
-    await externalSubmit(e.source, { target: e.target });
-    onClose();
+    externalSubmit({ targetUID: e.target, sourceUID: e.source });
   });
 
   return (
