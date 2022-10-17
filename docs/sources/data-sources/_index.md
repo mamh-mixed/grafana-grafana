@@ -52,7 +52,7 @@ These data sources have additional documentation in the Grafana docs:
 
 - [Alertmanager]({{< relref "./alertmanager/" >}})
 - [AWS CloudWatch]({{< relref "./aws-cloudwatch/" >}})
-- [Azure Monitor]({{< relref "./azuremonitor/" >}})
+- [Azure Monitor]({{< relref "./azure-monitor/" >}})
 - [Elasticsearch]({{< relref "./elasticsearch/" >}})
 - [Google Cloud Monitoring]({{< relref "./google-cloud-monitoring/" >}})
 - [Graphite]({{< relref "./graphite/" >}})
