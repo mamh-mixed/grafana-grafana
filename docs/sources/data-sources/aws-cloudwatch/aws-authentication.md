@@ -2,16 +2,18 @@
 aliases:
   - /docs/grafana/latest/datasources/aws-cloudwatch/aws-authentication/
   - /docs/grafana/latest/datasources/cloudwatch/
-description: AWS authentication
+  - /docs/grafana/latest/data-sources/aws-cloudwatch/aws-authentication/
+description: Guide to configuring AWS authentication in Grafana
 keywords:
   - grafana
   - aws
   - authentication
-title: Authentication
-weight: 5
+menuTitle: Authentication
+title: Configure AWS Authentication
+weight: 200
 ---
 
-# AWS authentication
+# AWS Authentication
 
 Requests from a Grafana plugin to AWS are made on behalf of an IAM role or an IAM user. The IAM user or IAM role must have the associated policies to perform certain API actions. Since these policies are specific to each data source, refer to the data source documentation for details.
 
