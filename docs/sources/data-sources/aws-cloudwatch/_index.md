@@ -14,7 +14,7 @@ keywords:
   - guide
 menuTitle: AWS CloudWatch
 title: AWS CloudWatch data source
-weight: 100
+weight: 200
 ---
 
 # AWS CloudWatch data source
