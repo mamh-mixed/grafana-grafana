@@ -2,13 +2,14 @@
 aliases:
   - /docs/grafana/latest/datasources/alertmanager/
   - /docs/grafana/latest/features/datasources/alertmanager/
+  - /docs/grafana/latest/data-sources/alertmanager/
 description: Guide for using Alertmanager as a data source in Grafana
 keywords:
   - grafana
   - prometheus
   - guide
-title: Alertmanager data source
 menuTitle: Alertmanager
+title: Alertmanager data source
 weight: 150
 ---
 
