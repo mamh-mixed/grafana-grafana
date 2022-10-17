@@ -13,7 +13,7 @@ menuTitle: Query editor
 weight: 300
 ---
 
-# CloudWatch query editor
+# AWS CloudWatch data source query editor
 
 The CloudWatch data source can query data from both CloudWatch metrics and CloudWatch Logs APIs, each with its own specialized query editor.
 
@@ -24,9 +24,9 @@ Select which API to query by using the query mode switch on top of the editor.
 
 ![CloudWatch API modes](/static/img/docs/cloudwatch/cloudwatch-query-editor-api-modes-8.3.0.png)
 
-You can also augment queries by using [template variables]({{< relref "./template-queries/" >}}).
+You can also augment queries by using [template variables]({{< relref "./template-variables/" >}}).
 
-## Metrics query editor
+## Query CloudWatch metrics
 
 You can build two types of queries with the metrics query editor: **Metric Search** and **Metric Query**.
 
@@ -180,7 +180,7 @@ The alias field will be deprecated and removed in a release.
 During this interim period, we won't fix bugs related to the alias pattern system.
 For details on why we're changing this feature, refer to [issue #48434](https://github.com/grafana/grafana/issues/48434).
 
-## Logs query editor
+## Query CloudWatch Logs
 
 To query CloudWatch Logs:
 

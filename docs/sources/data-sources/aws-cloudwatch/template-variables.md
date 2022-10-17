@@ -1,7 +1,7 @@
 ---
 aliases:
   - /docs/grafana/latest/datasources/aws-cloudwatch/template-queries-cloudwatch/
-  - /docs/grafana/latest/data-sources/aws-cloudwatch/template-queries/
+  - /docs/grafana/latest/data-sources/aws-cloudwatch/template-variables/
 description: Template variables in CloudWatch query
 keywords:
   - grafana
@@ -22,9 +22,9 @@ Grafana refers to such variables as template variables.
 
 For an introduction to templating and template variables, refer to the [Templating]({{< relref "../../dashboards/variables/" >}}) documentation.
 
-## Query variables
+## Use query variables
 
-You can use these CloudWatch data source queries to specify the `Query Type` field in the Variable edit view.
+You can specify these CloudWatch data source queries in the Variable edit view's `Query Type` field.
 Use them to fill a variable's options list with values like `regions`, `namespaces`, `metric names`, and `dimension keys/values`.
 
 | Name                      | List returned                                                                                                                                    |

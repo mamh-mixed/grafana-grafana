@@ -28,7 +28,7 @@ Once you have added the CloudWatch data source, you can build dashboards or use 
 
 > **Note:** To troubleshoot issues while setting up the CloudWatch data source, check the `/var/log/grafana/grafana.log` file.
 
-## Configure the CloudWatch data source
+## Configure the data source
 
 **To configure the data source:**
 
