@@ -1,6 +1,6 @@
 import { css, cx } from '@emotion/css';
 import classNames from 'classnames';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { RegisterOptions, useFormContext } from 'react-hook-form';
 
 import { durationToMilliseconds, GrafanaTheme2, parseDuration, SelectableValue } from '@grafana/data';
@@ -40,6 +40,7 @@ import { EvaluationIntervalLimitExceeded } from '../InvalidIntervalWarning';
 import { GrafanaAlertStatePicker } from './GrafanaAlertStatePicker';
 import { RuleEditorSection } from './RuleEditorSection';
 import { containsSlashes, Folder, RuleFolderPicker } from './RuleFolderPicker';
+import { SelectWithAdd } from './SelectWIthAdd';
 import { checkForPathSeparator } from './util';
 
 const MIN_TIME_RANGE_STEP_S = 10; // 10 seconds
@@ -55,7 +56,6 @@ const useGetGroups = (groupfoldersForGrafana: AsyncRequestState<RuleNamespace[]>
       return [];
     }
   }, [groupfoldersForGrafana, folderName]);
-
   return groupOptions;
 };
 
@@ -122,11 +122,21 @@ interface FolderAndGroupProps {
   initialFolder: RuleForm | null;
 }
 
+const useGetGroupOptionsFromFolder = (folderTilte: string) => {
+  const promRules = useUnifiedAlertingSelector((state) => state.promRules);
+  const groupfoldersForGrafana = promRules[GRAFANA_RULES_SOURCE_NAME];
+
+  const groupOptions: Array<SelectableValue<string>> = mapGroupsToOptions(
+    useGetGroups(groupfoldersForGrafana, folderTilte)
+  );
+  return groupOptions;
+};
+
 function FolderAndGroup({ initialFolder }: FolderAndGroupProps) {
   const {
-    register,
     formState: { errors },
     watch,
+    control,
   } = useFormContext<RuleFormValues>();
 
   const styles = useStyles2(getStyles);
@@ -134,16 +144,37 @@ function FolderAndGroup({ initialFolder }: FolderAndGroupProps) {
   const dispatch = useDispatch();
 
   const folder = watch('folder');
-  const promRules = useUnifiedAlertingSelector((state) => state.promRules);
-  const groupfoldersForGrafana = promRules[GRAFANA_RULES_SOURCE_NAME];
+  const group = watch('group');
+  const [selectedGroup, setSelectedGroup] = useState(group);
+  const initialRender = useRef(true);
 
-  const groupOptions: Array<SelectableValue<string>> = mapGroupsToOptions(
-    useGetGroups(groupfoldersForGrafana, folder?.title ?? '')
-  );
+  const groupOptions = useGetGroupOptionsFromFolder(folder?.title ?? '');
 
   useEffect(() => {
     dispatch(fetchAllPromRulesAction());
   }, [dispatch]);
+
+  const resetGroup = useCallback(() => {
+    if (group && !initialRender.current && folder?.title) {
+      setSelectedGroup('');
+    }
+    initialRender.current = false;
+  }, [initialRender, folder, setSelectedGroup, group]);
+
+  const groupIsInGroupOptions = useCallback(
+    (group_: string) => {
+      return groupOptions.includes((groupInList: SelectableValue<string>) => groupInList.label === group_);
+    },
+    [groupOptions]
+  );
+  const folderTilte = folder?.title ?? '';
+
+  useEffect(() => {
+    if (folderTilte && groupOptions && !groupIsInGroupOptions(selectedGroup)) {
+      resetGroup();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [folderTilte]);
 
   return (
     <div className={classNames([styles.flexRow, styles.alignBaseline])}>
@@ -193,11 +224,26 @@ function FolderAndGroup({ initialFolder }: FolderAndGroupProps) {
         error={errors.group?.message}
         invalid={!!errors.group?.message}
       >
-        <Input
-          id="group"
-          {...register('group', {
+        <InputControl
+          render={({ field: { ref, ...field } }) => (
+            <SelectWithAdd
+              {...field}
+              options={groupOptions}
+              width={42}
+              custom={false}
+              value={selectedGroup}
+              onChange={(value: string) => {
+                console.log('changing dins', value);
+                field.onChange(value);
+                setSelectedGroup(value);
+              }}
+            />
+          )}
+          name="group"
+          control={control}
+          rules={{
             required: { value: true, message: 'Must enter a group name' },
-          })}
+          }}
         />
       </Field>
     </div>
