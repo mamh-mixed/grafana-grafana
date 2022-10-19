@@ -16,15 +16,15 @@ weight: 400
 
 # Use template variables
 
-Instead of hard-coding server, application, and sensor names in metric queries, you can use variables.
-These variables are listed in dropdown select boxes at the top of the dashboard and help you change the display of data in your dashboard.
+Instead of hard-coding details such as server, application, and sensor names in metric queries, you can use variables.
+Grafana lists these variables in dropdown select boxes at the top of the dashboard to help you change the data displayed in your dashboard.
 Grafana refers to such variables as template variables.
 
 For an introduction to templating and template variables, refer to the [Templating]({{< relref "../../dashboards/variables/" >}}) and [Add and manage variables]({{< relref "../../dashboards/variables/add-template-variables/" >}}) documentation.
 
-## Choose a variable type
+## Choose a variable syntax
 
-The Elasticsearch data source supports two variable syntaxes for use in the **Query** field of Query variables:
+The Elasticsearch data source supports two variable syntaxes for use in the **Query** field:
 
 - `$varname`, such as `hostname:$hostname`, which is easy to read and write but doesn't let you use a variable in the middle of a word.
 - `[[varname]]`, such as `hostname:[[hostname]]`

@@ -12,8 +12,8 @@ keywords:
   - logs
   - resources
   - queries
-title: Azure Monitor data source query editor
 menuTitle: Query editor
+title: Azure Monitor data source query editor
 weight: 300
 ---
 
@@ -26,6 +26,8 @@ The Azure Monitor data source's query editor has three different modes depending
 - [**Azure Resource Graph**](#query-azure-resource-graph)
 
 You can also augment queries by using [template variables]({{< relref "./template-variables/" >}}).
+
+For options and functions common to all query editors, refer to [Query and transform data]({{< relref "../../panels-visualizations/query-transform-data" >}}).
 
 ## Query Azure Monitor Metrics
 

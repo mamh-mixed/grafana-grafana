@@ -10,8 +10,8 @@ keywords:
   - cloudwatch
   - guide
   - queries
-title: AWS CloudWatch data source query editor
 menuTitle: Query editor
+title: AWS CloudWatch data source query editor
 weight: 300
 ---
 
@@ -27,6 +27,8 @@ Select which API to query by using the query mode switch on top of the editor.
 ![CloudWatch API modes](/static/img/docs/cloudwatch/cloudwatch-query-editor-api-modes-8.3.0.png)
 
 You can also augment queries by using [template variables]({{< relref "./template-variables/" >}}).
+
+For options and functions common to all query editors, refer to [Query and transform data]({{< relref "../../panels-visualizations/query-transform-data" >}}).
 
 ## Query CloudWatch metrics
 

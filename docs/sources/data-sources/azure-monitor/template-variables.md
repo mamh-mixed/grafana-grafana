@@ -22,7 +22,7 @@ weight: 400
 
 # Azure Monitor template variables
 
-Instead of hard-coding resource group or resource name values in metric queries, you can use variables.
+Instead of hard-coding details such as resource group or resource name values in metric queries, you can use variables.
 This helps you create more interactive, dynamic, and reusable dashboards.
 Grafana refers to such variables as template variables.
 

@@ -10,8 +10,8 @@ keywords:
   - metrics
   - logs
   - queries
-title: Elasticsearch query editor
 menuTitle: Query editor
+title: Elasticsearch query editor
 weight: 300
 ---
 
@@ -22,6 +22,10 @@ weight: 300
 You can select multiple metrics and group by multiple terms or filters when using the Elasticsearch query editor.
 Use the plus and minus icons to the right to add and remove metrics or group by clauses.
 To expand the row to view and edit any available metric or group-by options, click the option text.
+
+You can also augment queries by using [template variables]({{< relref "./template-variables/" >}}).
+
+For options and functions common to all query editors, refer to [Query and transform data]({{< relref "../../panels-visualizations/query-transform-data" >}}).
 
 ## Name a time series
 
