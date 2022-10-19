@@ -1,3 +1,18 @@
+---
+aliases:
+  - /docs/grafana/latest/data-sources/elasticsearch/query-editor/
+  - /docs/grafana/latest/data-sources/elasticsearch/template-variables/
+description: Guide for using the Elasticsearch data source's query editor
+keywords:
+  - grafana
+  - prometheus
+  - logs
+  - queries
+menuTitle: Query editor
+title: Prometheus query editor
+weight: 300
+---
+
 # Prometheus query editor
 
 The Prometheus query editor has two distinct modes that you can toggle:
@@ -11,16 +26,20 @@ Select the `Builder | Code` tabs to switch between the editor modes.
 
 At the top of the editor, select `Run queries` to run a query.
 
-> **Note:** In Explore, to run Prometheus queries, select `Run query`.
+> **Note:** To run Prometheus queries in [Explore]({{< relref "../../explore/" >}}), select `Run query`.
 
 Each mode is synchronized with the other modes, so you can switch between them without losing your work, although there are some limitations.
 Some complex queries are not yet supported in Builder mode.
 When you switch from Code mode to Builder mode with such a query, the editor displays a popup that explains how you might lose parts of the query if you continue.
 You can then decide whether you still want to switch to Builder mode.
 
+You can also augment queries by using [template variables]({{< relref "./template-variables/" >}}).
+
+For options and functions common to all query editors, refer to [Query and transform data]({{< relref "../../panels-visualizations/query-transform-data" >}}).
+
 ## Configure common options
 
-You can configure the query editor by setting several options regardless of its mode.
+You can configure Prometheus-specific options in the query editor by setting several options regardless of its mode.
 
 ![Options](/static/img/docs/prometheus/options-9-1.png 'Options')
 

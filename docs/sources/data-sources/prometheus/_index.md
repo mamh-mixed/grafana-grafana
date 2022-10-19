@@ -96,6 +96,8 @@ datasources:
 
 ## Query the data source
 
+The Prometheus query editor has two distinct modes that you can toggle:
+
 For details, see the [query editor documentation]({{< relref "./query-editor/" >}}).
 
 ## View Grafana metrics with Prometheus
