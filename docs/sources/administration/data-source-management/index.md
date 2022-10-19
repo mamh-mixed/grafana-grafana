@@ -12,7 +12,9 @@ weight: 100
 
 # Data source management
 
-Grafana supports many different storage backends for your time series data (data source). Refer to [data sources]({{< relref "../../datasources/" >}}) for more information about using data sources in Grafana. Only users with the organization admin role can add data sources.
+Grafana supports many different storage backends for your time series data (data source).
+Refer to [data sources]({{< relref "../../datasources/" >}}) for more information about using data sources in Grafana.
+Only users with the organization admin role can add data sources.
 
 ## Add a data source
 
@@ -107,3 +109,22 @@ Note that _all_ existing permissions created for the data source will be deleted
 1. On the Permissions tab, click **Disable Permissions**.
 
 <div class="clearfix"></div>
+
+## Add data source plugins
+
+Grafana ships with several [built-in data sources]({{< relref "../data-sources/#built-in-core-data-sources" >}}).
+You can add additional data sources as plugins, which you can install or create yourself.
+
+### Find data source plugins in the plugin catalog
+
+To view available data source plugins, go to the [plugin catalog](/grafana/plugins/?type=datasource) and select the "Data sources" filter.
+For details about the plugin catalog, refer to [Plugin management]({{< relref "../administration/plugin-management/" >}}).
+
+You can further filter the plugin catalog's results for data sources provided by the Grafana community, Grafana Labs, and partners.
+If you use [Grafana Enterprise]{{< relref "../enterprise/" >}}, you can also filter by Enterprise-supported plugins.
+
+For more documentation on a specific data source plugin's features, including its query language and editor, refer to its plugin catalog page.
+
+### Create a data source plugin
+
+To build your own data source plugin, refer to the ["Build a data source plugin"](/tutorials/build-a-data-source-plugin/) tutorial and our documentation about [building a plugin](/developers/plugins/).
