@@ -6,8 +6,10 @@ aliases:
 description: Guide for using the AWS CloudWatch data source's query editor
 keywords:
   - grafana
+  - aws
   - cloudwatch
   - guide
+  - queries
 title: AWS CloudWatch data source query editor
 menuTitle: Query editor
 weight: 300

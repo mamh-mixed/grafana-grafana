@@ -24,31 +24,35 @@ This topic describes queries, templates, variables, and other configuration spec
 For instructions on how to add a data source to Grafana, refer to the [administration documentation]({{< relref "/administration/data-source-management/" >}}).
 Only users with the organization administrator role can add data sources.
 
+> **Note:** You can use [Grafana Cloud](/products/cloud/features/#cloud-logs) to avoid the overhead of installing, maintaining, and scaling your observability stack.
+> The free forever plan includes Grafana, 10K Prometheus series, 50 GB logs, and more.
+> [Create a free account to get started](https://grafana.com/auth/sign-up/create-user?pg=docs-grafana-install&plcmt=in-text).
+
 Once you have added the CloudWatch data source, you can build dashboards or use Explore with CloudWatch metrics and CloudWatch Logs.
 
 > **Note:** To troubleshoot issues while setting up the CloudWatch data source, check the `/var/log/grafana/grafana.log` file.
 
 ## Configure the data source
 
-**To configure the data source:**
+**To access the data source configuration page:**
 
 1. Hover the cursor over the **Configuration** (gear) icon.
 1. Select **Data Sources**.
 1. Select the AWS CloudWatch data source.
 
-**To configure AWS authentication:**
+### Configure AWS authentication
 
 Requests from a Grafana plugin to AWS are made on behalf of an AWS Identity and Access Management (IAM) role or IAM user.
 The IAM user or IAM role must have the associated policies to perform certain API actions.
 
 For details, see [AWS authentication]({{< relref "./aws-authentication/" >}}).
 
-### IAM policies
+#### IAM policy examples
 
 To read CloudWatch metrics and EC2 tags, instances, regions, and alarms, you must grant Grafana permissions via IAM.
 You can attach these permissions to the IAM role or IAM user you configured in [AWS authentication]({{< relref "./aws-authentication/" >}}).
 
-#### Metrics-only example:
+**Metrics-only:**
 
 ```json
 {
@@ -83,7 +87,7 @@ You can attach these permissions to the IAM role or IAM user you configured in [
 }
 ```
 
-#### Logs-only example:
+**Logs-only:**
 
 ```json
 {
@@ -118,7 +122,7 @@ You can attach these permissions to the IAM role or IAM user you configured in [
 }
 ```
 
-#### Metrics and Logs example:
+**Metrics and Logs:**
 
 ```json
 {
@@ -166,14 +170,16 @@ You can attach these permissions to the IAM role or IAM user you configured in [
 }
 ```
 
-### Namespaces of Custom Metrics
+### Configure CloudWatch settings
+
+#### Namespaces of Custom Metrics
 
 Grafana can't load custom namespaces through the CloudWatch [GetMetricData API](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_GetMetricData.html).
 
 To make custom metrics appear in the data source's query editor fields, specify the names of the namespaces containing the custom metrics in the data source configuration's _Namespaces of Custom Metrics_ field.
 The field accepts multiple namespaces separated by commas.
 
-### Timeout
+#### Timeout
 
 Configure the timeout specifically for CloudWatch Logs queries.
 
@@ -181,7 +187,7 @@ Log queries don't keep a single request open, and instead periodically poll for 
 Therefore, they don't recognize the standard Grafana query timeout.
 Because of limits on concurrently running queries in CloudWatch, they can also take longer to finish.
 
-### X-Ray trace links
+#### X-Ray trace links
 
 To automatically add links in your logs when the log contains the `@xrayTraceId` field, link an X-Ray data source in the "X-Ray trace link" section of the data source configuration.
 
@@ -272,13 +278,13 @@ datasources:
       defaultRegion: eu-west-2
 ```
 
-## CloudWatch query editor
+## Query the data source
 
 The CloudWatch data source can query data from both CloudWatch metrics and CloudWatch Logs APIs, each with its own specialized query editor.
 
 For details, see the [query editor documentation]({{< relref "./query-editor/" >}}).
 
-## Pre-configured dashboards
+## Import pre-configured dashboards
 
 The CloudWatch data source ships with curated and pre-configured dashboards for five of the most popular AWS services:
 
@@ -298,7 +304,7 @@ The CloudWatch data source ships with curated and pre-configured dashboards for 
 To customize one of these dashboards, we recommend that you save it under a different name.
 If you don't, upgrading the plugin overwrites the customized dashboard.
 
-## Alerting
+## Create queries for alerting
 
 Alerting requires queries that return numeric data, which CloudWatch Logs support.
 For example, you can enable alerts through the use of the `stats` command.
@@ -315,22 +321,24 @@ filter @message like /Exception/
 
 For more information on Grafana alerts, refer to [Alerting]({{< relref "/alerting/" >}}).
 
-## Pricing
+## Control pricing
 
 The Amazon CloudWatch data source for Grafana uses [`ListMetrics`](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_ListMetrics.html) and [`GetMetricData`](https://docs.aws.amazon.com/AmazonCloudWatch/latest/APIReference/API_GetMetricData.html) CloudWatch API calls to list and retrieve metrics.
 Pricing for CloudWatch Logs is based on the amount of data ingested, archived, and analyzed via CloudWatch Logs Insights queries.
 Each time you select a dimension in the query editor, Grafana issues a `ListMetrics` API request.
 Each time you change queries in the query editor, Grafana issues a new request to the `GetMetricData` API.
 
-> **Note:** Grafana v6.5 and higher replaced all `GetMetricStatistics` API requests with calls to GetMetricData to provide better support for CloudWatch metric math, and enables the automatic generation of search expressions when using wildcards or disabling the `Match Exact` option. The `GetMetricStatistics` API qualified for the CloudWatch API free tier, but `GetMetricData` calls don't.
+> **Note:** Grafana v6.5 and higher replaced all `GetMetricStatistics` API requests with calls to GetMetricData to provide better support for CloudWatch metric math, and enables the automatic generation of search expressions when using wildcards or disabling the `Match Exact` option.
+> The `GetMetricStatistics` API qualified for the CloudWatch API free tier, but `GetMetricData` calls don't.
 
 For more information, refer to the [CloudWatch pricing page](https://aws.amazon.com/cloudwatch/pricing/).
 
-## Service quotas
+## Manage service quotas
 
 AWS defines quotas, or limits, for resources, actions, and items in your AWS account.
 Depending on the number of queries in your dashboard and the number of users accessing the dashboard, you might reach the usage limits for various CloudWatch and CloudWatch Logs resources.
 Quotas are defined per account and per region.
+
 If you use multiple regions or configured more than one CloudWatch data source to query against multiple accounts, you must request a quota increase for each account and region in which you reach the limit.
 
 To request a quota increase, visit the [AWS Service Quotas console](https://console.aws.amazon.com/servicequotas/home?r#!/services/monitoring/quotas/L-5E141212).

@@ -5,10 +5,10 @@ aliases:
 description: Template variables in CloudWatch query
 keywords:
   - grafana
-  - templates
-  - variables
   - aws
   - cloudwatch
+  - templates
+  - variables
 menuTitle: Template variables
 title: Template variables in CloudWatch queries
 weight: 400
@@ -20,7 +20,7 @@ Instead of hard-coding server, application, and sensor names in metric queries, 
 These variables are listed in dropdown select boxes at the top of the dashboard and help you change the display of data in your dashboard.
 Grafana refers to such variables as template variables.
 
-For an introduction to templating and template variables, refer to the [Templating]({{< relref "../../dashboards/variables/" >}}) documentation.
+For an introduction to templating and template variables, refer to the [Templating]({{< relref "../../dashboards/variables/" >}}) and [Add and manage variables]({{< relref "../../dashboards/variables/add-template-variables/" >}}) documentation.
 
 ## Use query variables
 
