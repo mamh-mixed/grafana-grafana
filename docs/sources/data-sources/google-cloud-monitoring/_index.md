@@ -12,24 +12,25 @@ keywords:
   - guide
   - cloud
   - monitoring
-title: Google Cloud Monitoring
+menuTitle: Google Cloud Monitoring
+title: Google Cloud Monitoring data source
 weight: 350
 ---
 
-# Using Google Cloud Monitoring in Grafana
+# Google Cloud Monitoring data source
 
 Grafana ships with built-in support for Google Cloud Monitoring. Add it as a data source to build dashboards for your Google Cloud Monitoring metrics. For instructions on how to add a data source, refer to [Add a data source]({{< relref "../add-a-data-source/" >}}). Only users with the organization admin role can add data sources.
 
 > **Note** Before Grafana v7.1, Google Cloud Monitoring was referred to as Google Stackdriver.
 
-## Configure the Google Cloud Monitoring data source
+## Configure the data source
 
 To access Google Cloud Monitoring settings, hover your mouse over the **Configuration** (gear) icon, then click **Data Sources**, and click **Add data source**, then click the Google Cloud Monitoring data source.
 
-| Name      | Description                                                                           |
-| --------- | ------------------------------------------------------------------------------------- |
-| `Name`    | The data source name. This is how you refer to the data source in panels and queries. |
-| `Default` | Default data source means that it is pre-selected for new panels.                     |
+| Name        | Description                                                                           |
+| ----------- | ------------------------------------------------------------------------------------- |
+| **Name**    | The data source name. This is how you refer to the data source in panels and queries. |
+| **Default** | Default data source means that it is pre-selected for new panels.                     |
 
 For authentication options and configuration details, see the [Google authentication]({{< relref "google-authentication/" >}}) documentation.
 
@@ -203,23 +204,23 @@ To create an SLO query, follow these steps:
 
 The friendly names for the time series selectors are shown in Grafana. Here is the mapping from the friendly name to the system name that is used in the Service Monitoring documentation:
 
-| Selector dropdown value    | Corresponding time series selector used |
-| -------------------------- | --------------------------------------- |
-| SLI Value                  | select_slo_health                       |
-| SLO Compliance             | select_slo_compliance                   |
-| SLO Error Budget Remaining | select_slo_budget_fraction              |
-| SLO Burn Rate              | select_slo_burn_rate                    |
+| Selector dropdown value        | Corresponding time series selector |
+| ------------------------------ | ---------------------------------- |
+| **SLI Value**                  | select_slo_health                  |
+| **SLO Compliance**             | select_slo_compliance              |
+| **SLO Error Budget Remaining** | select_slo_budget_fraction         |
+| **SLO Burn Rate**              | select_slo_burn_rate               |
 
 #### Alias patterns for SLO queries
 
 The Alias By field allows you to control the format of the legend keys for SLO queries too.
 
-| Alias Pattern  | Description                  | Example Result      |
-| -------------- | ---------------------------- | ------------------- |
-| `{{project}}`  | returns the GCP project name | `myProject`         |
-| `{{service}}`  | returns the service name     | `myService`         |
-| `{{slo}}`      | returns the SLO              | `latency-slo`       |
-| `{{selector}}` | returns the selector         | `select_slo_health` |
+| Alias pattern  | Description                   | Example result      |
+| -------------- | ----------------------------- | ------------------- |
+| `{{project}}`  | Returns the GCP project name. | `myProject`         |
+| `{{service}}`  | Returns the service name.     | `myService`         |
+| `{{slo}}`      | Returns the SLO.              | `latency-slo`       |
+| `{{selector}}` | Returns the selector.         | `select_slo_health` |
 
 #### Alignment period/group by time for SLO queries
 
@@ -227,7 +228,7 @@ SLO queries use the same [alignment period functionality as metric queries]({{< 
 
 ### MQL (Monitoring Query Language) queries
 
-> **Note:** Available in Grafana v7.4 and later versions.
+> **Note:** Available in Grafana v7.4 and higher.
 
 The MQL query builder in the Google Cloud Monitoring data source allows you to display MQL results in time series format. To get an understanding of the basic concepts in MQL, refer to [Introduction to Monitoring Query Language](https://cloud.google.com/monitoring/mql).
 
@@ -259,18 +260,18 @@ types of template variables.
 
 Variable of the type _Query_ allows you to query Google Cloud Monitoring for various types of data. The Google Cloud Monitoring data source plugin provides the following `Query Types`.
 
-| Name                             | Description                                                                                                   |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `Metric Types`                   | Returns a list of metric type names that are available for the specified service.                             |
-| `Labels Keys`                    | Returns a list of keys for `metric label` and `resource label` in the specified metric.                       |
-| `Labels Values`                  | Returns a list of values for the label in the specified metric.                                               |
-| `Resource Types`                 | Returns a list of resource types for the specified metric.                                                    |
-| `Aggregations`                   | Returns a list of aggregations (cross series reducers) for the specified metric.                              |
-| `Aligners`                       | Returns a list of aligners (per series aligners) for the specified metric.                                    |
-| `Alignment periods`              | Returns a list of all alignment periods that are available in Google Cloud Monitoring query editor in Grafana |
-| `Selectors`                      | Returns a list of selectors that can be used in SLO (Service Level Objectives) queries                        |
-| `SLO Services`                   | Returns a list of Service Monitoring services that can be used in SLO queries                                 |
-| `Service Level Objectives (SLO)` | Returns a list of SLO's for the specified SLO service                                                         |
+| Name                               | Description                                                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **Metric Types**                   | Returns a list of metric type names that are available for the specified service.                             |
+| **Labels Keys**                    | Returns a list of keys for `metric label` and `resource label` in the specified metric.                       |
+| **Labels Values**                  | Returns a list of values for the label in the specified metric.                                               |
+| **Resource Types**                 | Returns a list of resource types for the specified metric.                                                    |
+| **Aggregations**                   | Returns a list of aggregations (cross series reducers) for the specified metric.                              |
+| **Aligners**                       | Returns a list of aligners (per series aligners) for the specified metric.                                    |
+| **Alignment periods**              | Returns a list of all alignment periods that are available in Google Cloud Monitoring query editor in Grafana |
+| **Selectors**                      | Returns a list of selectors that can be used in SLO (Service Level Objectives) queries                        |
+| **SLO Services**                   | Returns a list of Service Monitoring services that can be used in SLO queries                                 |
+| **Service Level Objectives (SLO)** | Returns a list of SLO's for the specified SLO service                                                         |
 
 ### Using variables in queries
 
@@ -291,20 +292,22 @@ Example Result: `monitoring.googleapis.com/uptime_check/http_status has this val
 
 ### Patterns for the Annotation Query Editor
 
-| Alias Pattern Format     | Description                      | Alias Pattern Example            | Example Result                                    |
-| ------------------------ | -------------------------------- | -------------------------------- | ------------------------------------------------- |
-| `{{metric.value}}`       | value of the metric/point        | `{{metric.value}}`               | `555`                                             |
-| `{{metric.type}}`        | returns the full Metric Type     | `{{metric.type}}`                | `compute.googleapis.com/instance/cpu/utilization` |
-| `{{metric.name}}`        | returns the metric name part     | `{{metric.name}}`                | `instance/cpu/utilization`                        |
-| `{{metric.service}}`     | returns the service part         | `{{metric.service}}`             | `compute`                                         |
-| `{{metric.label.xxx}}`   | returns the metric label value   | `{{metric.label.instance_name}}` | `grafana-1-prod`                                  |
-| `{{resource.label.xxx}}` | returns the resource label value | `{{resource.label.zone}}`        | `us-east1-b`                                      |
+| Alias pattern format     | Description                       | Alias pattern example            | Example result                                    |
+| ------------------------ | --------------------------------- | -------------------------------- | ------------------------------------------------- |
+| `{{metric.value}}`       | Value of the metric/point.        | `{{metric.value}}`               | `555`                                             |
+| `{{metric.type}}`        | Returns the full Metric Type.     | `{{metric.type}}`                | `compute.googleapis.com/instance/cpu/utilization` |
+| `{{metric.name}}`        | Returns the metric name part.     | `{{metric.name}}`                | `instance/cpu/utilization`                        |
+| `{{metric.service}}`     | Returns the service part.         | `{{metric.service}}`             | `compute`                                         |
+| `{{metric.label.xxx}}`   | Returns the metric label value.   | `{{metric.label.instance_name}}` | `grafana-1-prod`                                  |
+| `{{resource.label.xxx}}` | Returns the resource label value. | `{{resource.label.zone}}`        | `us-east1-b`                                      |
 
-## Configure the data source with provisioning
+## Provision the data source
 
 You can provision CloudWatch data source by modifying Grafana's configuration files. To learn more about provisioning and all the settings you can set, see the [provisioning documentation]({{< relref "../../administration/provisioning/#data-sources" >}})
 
-Here is a provisioning example using the JWT (Service Account key file) authentication type.
+### Provisioning examples
+
+**Using the JWT (Service Account key file) authentication type:**
 
 ```yaml
 apiVersion: 1
@@ -327,7 +330,7 @@ datasources:
         -----END PRIVATE KEY-----
 ```
 
-Here is a provisioning example using GCE Default Service Account authentication.
+**Using GCE Default Service Account authentication:**
 
 ```yaml
 apiVersion: 1
