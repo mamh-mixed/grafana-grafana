@@ -1918,30 +1918,14 @@ func TestQuota(t *testing.T) {
 	// check quota limits
 	t.Run("when quota limit exceed creating new rule should fail", func(t *testing.T) {
 		// get existing org quota
+		limit, used := apiClient.GetOrgQuotaLimits(t, 1)
 		query := models.GetOrgQuotaByTargetQuery{OrgId: 1, Target: "alert_rule"}
 		err = store.GetOrgQuotaByTarget(context.Background(), &query)
 		require.NoError(t, err)
-		used := query.Result.Used
-		limit := query.Result.Limit
 
-		// set org quota limit to equal used
-		orgCmd := models.UpdateOrgQuotaCmd{
-			OrgId:  1,
-			Target: "alert_rule",
-			Limit:  used,
-		}
-		err := store.UpdateOrgQuota(context.Background(), &orgCmd)
-		require.NoError(t, err)
-
+		apiClient.UpdateAlertRuleOrgQuota(t, 1, used)
 		t.Cleanup(func() {
-			// reset org quota to original value
-			orgCmd := models.UpdateOrgQuotaCmd{
-				OrgId:  1,
-				Target: "alert_rule",
-				Limit:  limit,
-			}
-			err := store.UpdateOrgQuota(context.Background(), &orgCmd)
-			require.NoError(t, err)
+			apiClient.UpdateAlertRuleOrgQuota(t, 1, limit)
 		})
 
 		// try to create an alert rule

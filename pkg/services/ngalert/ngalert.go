@@ -237,6 +237,11 @@ func (ng *AlertNG) init() error {
 	}
 	api.RegisterAPIEndpoints(ng.Metrics.GetAPIMetrics())
 
+	ng.bus.Publish(context.TODO(), &events.NewQuotaReporter{
+		TargetSrv: quota.TargetSrv("alert_rule"),
+		Reporter:  api.Usage,
+	})
+
 	return DeclareFixedRoles(ng.accesscontrolService)
 }
 

@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 
 	"github.com/grafana/grafana/pkg/api/routing"
+	"github.com/grafana/grafana/pkg/bus"
+	"github.com/grafana/grafana/pkg/events"
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/filestorage"
 	"github.com/grafana/grafana/pkg/infra/log"
@@ -97,6 +99,7 @@ func ProvideService(
 	features featuremgmt.FeatureToggles,
 	cfg *setting.Cfg,
 	quotaService quota.Service,
+	bus bus.Bus,
 ) StorageService {
 	settings, err := LoadStorageConfig(cfg, features)
 	if err != nil {
@@ -259,6 +262,12 @@ func ProvideService(
 	s := newStandardStorageService(sql, globalRoots, initializeOrgStorages, authService, cfg)
 	s.quotaService = quotaService
 	s.cfg = settings
+
+	bus.Publish(context.TODO(), &events.NewQuotaReporter{
+		TargetSrv: quota.TargetSrv("file"),
+		Reporter:  s.Usage,
+	})
+
 	return s
 }
 
@@ -327,6 +336,23 @@ func (s *standardStorageService) Read(ctx context.Context, user *user.SignedInUs
 		return nil, ErrAccessDenied
 	}
 	return s.tree.GetFile(ctx, getOrgId(user), path)
+}
+
+func (s *standardStorageService) Usage(ctx context.Context, ScopeParameters *quota.ScopeParameters) (map[quota.Scope]int64, error) {
+	u := make(map[quota.Scope]int64)
+
+	// fetch tree for all organisations
+	root, storagePath := s.tree.getRoot(ac.GlobalOrgID, "/")
+	if root == nil {
+		return u, ErrStorageNotFound
+	}
+
+	if resp, err := root.Store().List(ctx, storagePath, nil, &filestorage.ListOptions{WithFiles: true}); err != nil {
+		return u, err
+	} else {
+		u[quota.GlobalScope] = int64(len(resp.Files))
+	}
+	return u, nil
 }
 
 type UploadRequest struct {

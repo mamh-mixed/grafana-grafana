@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/grafana/grafana/pkg/services/quota"
 	"github.com/stretchr/testify/require"
 )
 
@@ -24,5 +25,13 @@ type FakeQuotaStore struct {
 }
 
 func (f *FakeQuotaStore) DeleteByUser(ctx context.Context, userID int64) error {
+	return f.ExpectedError
+}
+
+func (f *FakeQuotaStore) Get(ctx context.Context, scopeParams *quota.ScopeParameters) (quota.Limits, error) {
+	return nil, f.ExpectedError
+}
+
+func (f *FakeQuotaStore) Update(ctx context.Context, cmd *quota.UpdateQuotaCmd) error {
 	return f.ExpectedError
 }

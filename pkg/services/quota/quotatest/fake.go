@@ -12,8 +12,16 @@ type FakeQuotaService struct {
 	err     error
 }
 
-func NewQuotaServiceFake() *FakeQuotaService {
-	return &FakeQuotaService{}
+func NewQuotaServiceFake(reached bool, err error) *FakeQuotaService {
+	return &FakeQuotaService{reached, err}
+}
+
+func (f *FakeQuotaService) Get(ctx context.Context, scope string, id int64) ([]quota.QuotaDTO, error) {
+	return []quota.QuotaDTO{}, nil
+}
+
+func (f *FakeQuotaService) Update(ctx context.Context, cmd *quota.UpdateQuotaCmd) error {
+	return nil
 }
 
 func (f *FakeQuotaService) QuotaReached(c *models.ReqContext, target string) (bool, error) {

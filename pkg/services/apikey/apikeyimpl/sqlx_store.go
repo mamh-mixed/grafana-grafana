@@ -10,6 +10,7 @@ import (
 
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/apikey"
+	"github.com/grafana/grafana/pkg/services/quota"
 	"github.com/grafana/grafana/pkg/services/sqlstore/session"
 	"github.com/grafana/grafana/pkg/setting"
 )
@@ -141,4 +142,28 @@ func (ss *sqlxStore) UpdateAPIKeyLastUsedDate(ctx context.Context, tokenID int64
 	now := timeNow()
 	_, err := ss.sess.Exec(ctx, `UPDATE api_key SET last_used_at=? WHERE id=?`, &now, tokenID)
 	return err
+}
+
+func (ss *sqlxStore) Count(ctx context.Context, scopeParams *quota.ScopeParameters) (map[quota.Scope]int64, error) {
+	u := make(map[quota.Scope]int64)
+	type result struct {
+		Count int64
+	}
+
+	r := result{}
+	if err := ss.sess.Get(ctx, &r, `SELECT COUNT(*) AS count FROM api_key`); err != nil {
+		return u, err
+	} else {
+		u[quota.GlobalScope] = r.Count
+	}
+
+	if scopeParams.OrgID != 0 {
+		if err := ss.sess.Get(ctx, &r, `SELECT COUNT(*) AS count FROM api_key WHERE org_id = ?`, scopeParams.OrgID); err != nil {
+			return u, err
+		} else {
+			u[quota.OrgScope] = r.Count
+		}
+	}
+
+	return u, nil
 }

@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/grafana/grafana/pkg/bus"
+	"github.com/grafana/grafana/pkg/events"
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/org"
+	"github.com/grafana/grafana/pkg/services/quota"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/util"
 )
@@ -18,9 +21,16 @@ type Service struct {
 	log   log.Logger
 }
 
-func ProvideService(db db.DB, cfg *setting.Cfg) org.Service {
+func ProvideService(
+	db db.DB,
+	cfg *setting.Cfg,
+	bus bus.Bus,
+	// add quota.Service as dependency to make sure that
+	// the listener has been added before publishing the reporter
+	_ quota.Service,
+) org.Service {
 	log := log.New("org service")
-	return &Service{
+	s := &Service{
 		store: &sqlStore{
 			db:      db,
 			dialect: db.GetDialect(),
@@ -30,6 +40,16 @@ func ProvideService(db db.DB, cfg *setting.Cfg) org.Service {
 		cfg: cfg,
 		log: log,
 	}
+
+	bus.Publish(context.TODO(), &events.NewQuotaReporter{
+		TargetSrv: quota.TargetSrv("org"),
+		Reporter:  s.Usage,
+	})
+	return s
+}
+
+func (s *Service) Usage(ctx context.Context, scopeParams *quota.ScopeParameters) (map[quota.Scope]int64, error) {
+	return s.store.Count(ctx, scopeParams)
 }
 
 func (s *Service) GetIDForNewUser(ctx context.Context, cmd org.GetOrgIDForNewUserCommand) (int64, error) {

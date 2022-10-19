@@ -25,11 +25,7 @@ type Store interface {
 	WithDbSession(ctx context.Context, callback DBTransactionFunc) error
 	WithNewDbSession(ctx context.Context, callback DBTransactionFunc) error
 	GetOrgQuotaByTarget(ctx context.Context, query *models.GetOrgQuotaByTargetQuery) error
-	GetOrgQuotas(ctx context.Context, query *models.GetOrgQuotasQuery) error
-	UpdateOrgQuota(ctx context.Context, cmd *models.UpdateOrgQuotaCmd) error
 	GetUserQuotaByTarget(ctx context.Context, query *models.GetUserQuotaByTargetQuery) error
-	GetUserQuotas(ctx context.Context, query *models.GetUserQuotasQuery) error
-	UpdateUserQuota(ctx context.Context, cmd *models.UpdateUserQuotaCmd) error
 	GetGlobalQuotaByTarget(ctx context.Context, query *models.GetGlobalQuotaByTargetQuery) error
 	WithTransactionalDbSession(ctx context.Context, callback DBTransactionFunc) error
 	InTransaction(ctx context.Context, fn func(ctx context.Context) error) error

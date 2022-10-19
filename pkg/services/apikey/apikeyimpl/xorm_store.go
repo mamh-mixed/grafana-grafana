@@ -11,6 +11,8 @@ import (
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/apikey"
+	"github.com/grafana/grafana/pkg/services/quota"
+	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
@@ -173,4 +175,40 @@ func (ss *sqlStore) UpdateAPIKeyLastUsedDate(ctx context.Context, tokenID int64)
 
 		return nil
 	})
+}
+
+func (ss *sqlStore) Count(ctx context.Context, scopeParams *quota.ScopeParameters) (map[quota.Scope]int64, error) {
+	u := make(map[quota.Scope]int64)
+	type result struct {
+		Count int64
+	}
+
+	r := result{}
+	if err := ss.db.WithDbSession(ctx, func(sess *sqlstore.DBSession) error {
+		rawSQL := fmt.Sprintf("SELECT COUNT(*) AS count FROM api_key")
+		if _, err := sess.SQL(rawSQL).Get(&r); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return u, err
+	} else {
+		u[quota.GlobalScope] = r.Count
+	}
+
+	if scopeParams.OrgID != 0 {
+		if err := ss.db.WithDbSession(ctx, func(sess *sqlstore.DBSession) error {
+			rawSQL := fmt.Sprintf("SELECT COUNT(*) AS count FROM api_key WHERE org_id = ?")
+			if _, err := sess.SQL(rawSQL, scopeParams.OrgID).Get(&r); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return u, err
+		} else {
+			u[quota.OrgScope] = r.Count
+		}
+	}
+
+	return u, nil
 }

@@ -13,13 +13,16 @@ import (
 
 	sdkhttpclient "github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 
+	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/components/simplejson"
+	"github.com/grafana/grafana/pkg/events"
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/httpclient"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
+	"github.com/grafana/grafana/pkg/services/quota"
 	"github.com/grafana/grafana/pkg/services/secrets"
 	"github.com/grafana/grafana/pkg/services/secrets/kvstore"
 	"github.com/grafana/grafana/pkg/setting"
@@ -52,6 +55,10 @@ type cachedRoundTripper struct {
 func ProvideService(
 	db db.DB, secretsService secrets.Service, secretsStore kvstore.SecretsKVStore, cfg *setting.Cfg,
 	features featuremgmt.FeatureToggles, ac accesscontrol.AccessControl, datasourcePermissionsService accesscontrol.DatasourcePermissionsService,
+	bus bus.Bus,
+	// add quota.Service as dependency to make sure that
+	// the listener has been added before publishing the reporter
+	_ quota.Service,
 ) *Service {
 	dslogger := log.New("datasources")
 	store := &SqlStore{db: db, logger: dslogger}
@@ -73,7 +80,15 @@ func ProvideService(
 	ac.RegisterScopeAttributeResolver(NewNameScopeResolver(store))
 	ac.RegisterScopeAttributeResolver(NewIDScopeResolver(store))
 
+	bus.Publish(context.TODO(), &events.NewQuotaReporter{
+		TargetSrv: quota.TargetSrv("data_source"),
+		Reporter:  s.Usage,
+	})
 	return s
+}
+
+func (s *Service) Usage(ctx context.Context, scopeParams *quota.ScopeParameters) (map[quota.Scope]int64, error) {
+	return nil, fmt.Errorf("not implemented")
 }
 
 // DataSourceRetriever interface for retrieving a datasource.

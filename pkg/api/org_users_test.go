@@ -13,15 +13,18 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grafana/grafana/pkg/api/dtos"
+	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/localcache"
+	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/services/org/orgimpl"
 	"github.com/grafana/grafana/pkg/services/org/orgtest"
+	"github.com/grafana/grafana/pkg/services/quota/quotatest"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/services/sqlstore/mockstore"
 	"github.com/grafana/grafana/pkg/services/team/teamimpl"
@@ -390,10 +393,10 @@ func TestGetOrgUsersAPIEndpoint_AccessControlMetadata(t *testing.T) {
 			cfg := setting.NewCfg()
 			cfg.RBACEnabled = tc.enableAccessControl
 			sc := setupHTTPServerWithCfg(t, false, cfg, func(hs *HTTPServer) {
+				b := bus.ProvideBus(tracing.InitializeTracerForTest())
 				hs.userService = userimpl.ProvideService(
-					hs.SQLStore, nil, cfg, teamimpl.ProvideService(hs.SQLStore.(*sqlstore.SQLStore), cfg), localcache.ProvideService(),
-				)
-				hs.orgService = orgimpl.ProvideService(hs.SQLStore, cfg)
+					hs.SQLStore, nil, cfg, teamimpl.ProvideService(hs.SQLStore.(*sqlstore.SQLStore), cfg), localcache.ProvideService(), b, quotatest.NewQuotaServiceFake(false, nil))
+				hs.orgService = orgimpl.ProvideService(hs.SQLStore, cfg, b, quotatest.NewQuotaServiceFake(false, nil))
 			})
 			setupOrgUsersDBForAccessControlTests(t, sc.db)
 			setInitCtxSignedInUser(sc.initCtx, tc.user)
@@ -494,10 +497,11 @@ func TestGetOrgUsersAPIEndpoint_AccessControl(t *testing.T) {
 			cfg := setting.NewCfg()
 			cfg.RBACEnabled = tc.enableAccessControl
 			sc := setupHTTPServerWithCfg(t, false, cfg, func(hs *HTTPServer) {
+				b := bus.ProvideBus(tracing.InitializeTracerForTest())
+				quotaService := quotatest.NewQuotaServiceFake(false, nil)
 				hs.userService = userimpl.ProvideService(
-					hs.SQLStore, nil, cfg, teamimpl.ProvideService(hs.SQLStore.(*sqlstore.SQLStore), cfg), localcache.ProvideService(),
-				)
-				hs.orgService = orgimpl.ProvideService(hs.SQLStore, cfg)
+					hs.SQLStore, nil, cfg, teamimpl.ProvideService(hs.SQLStore.(*sqlstore.SQLStore), cfg), localcache.ProvideService(), b, quotaService)
+				hs.orgService = orgimpl.ProvideService(hs.SQLStore, cfg, b, quotaService)
 			})
 			setInitCtxSignedInUser(sc.initCtx, tc.user)
 			setupOrgUsersDBForAccessControlTests(t, sc.db)
@@ -599,9 +603,9 @@ func TestPostOrgUsersAPIEndpoint_AccessControl(t *testing.T) {
 			cfg := setting.NewCfg()
 			cfg.RBACEnabled = tc.enableAccessControl
 			sc := setupHTTPServerWithCfg(t, false, cfg, func(hs *HTTPServer) {
+				b := bus.ProvideBus(tracing.InitializeTracerForTest())
 				hs.userService = userimpl.ProvideService(
-					hs.SQLStore, nil, cfg, teamimpl.ProvideService(hs.SQLStore.(*sqlstore.SQLStore), cfg), localcache.ProvideService(),
-				)
+					hs.SQLStore, nil, cfg, teamimpl.ProvideService(hs.SQLStore.(*sqlstore.SQLStore), cfg), localcache.ProvideService(), b, quotatest.NewQuotaServiceFake(false, nil))
 			})
 
 			setupOrgUsersDBForAccessControlTests(t, sc.db)
@@ -718,9 +722,9 @@ func TestOrgUsersAPIEndpointWithSetPerms_AccessControl(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			sc := setupHTTPServer(t, true, func(hs *HTTPServer) {
 				hs.tempUserService = tempuserimpl.ProvideService(hs.SQLStore)
+				b := bus.ProvideBus(tracing.InitializeTracerForTest())
 				hs.userService = userimpl.ProvideService(
-					hs.SQLStore, nil, setting.NewCfg(), teamimpl.ProvideService(hs.SQLStore.(*sqlstore.SQLStore), setting.NewCfg()), localcache.ProvideService(),
-				)
+					hs.SQLStore, nil, setting.NewCfg(), teamimpl.ProvideService(hs.SQLStore.(*sqlstore.SQLStore), setting.NewCfg()), localcache.ProvideService(), b, quotatest.NewQuotaServiceFake(false, nil))
 			})
 			setInitCtxSignedInViewer(sc.initCtx)
 			setupOrgUsersDBForAccessControlTests(t, sc.db)
@@ -836,10 +840,11 @@ func TestPatchOrgUsersAPIEndpoint_AccessControl(t *testing.T) {
 			cfg := setting.NewCfg()
 			cfg.RBACEnabled = tc.enableAccessControl
 			sc := setupHTTPServerWithCfg(t, false, cfg, func(hs *HTTPServer) {
+				b := bus.ProvideBus(tracing.InitializeTracerForTest())
+				quotaService := quotatest.NewQuotaServiceFake(false, nil)
 				hs.userService = userimpl.ProvideService(
-					hs.SQLStore, nil, cfg, teamimpl.ProvideService(hs.SQLStore.(*sqlstore.SQLStore), cfg), localcache.ProvideService(),
-				)
-				hs.orgService = orgimpl.ProvideService(hs.SQLStore, cfg)
+					hs.SQLStore, nil, cfg, teamimpl.ProvideService(hs.SQLStore.(*sqlstore.SQLStore), cfg), localcache.ProvideService(), b, quotaService)
+				hs.orgService = orgimpl.ProvideService(hs.SQLStore, cfg, b, quotaService)
 			})
 			setupOrgUsersDBForAccessControlTests(t, sc.db)
 			setInitCtxSignedInUser(sc.initCtx, tc.user)
@@ -963,10 +968,11 @@ func TestDeleteOrgUsersAPIEndpoint_AccessControl(t *testing.T) {
 			cfg := setting.NewCfg()
 			cfg.RBACEnabled = tc.enableAccessControl
 			sc := setupHTTPServerWithCfg(t, false, cfg, func(hs *HTTPServer) {
+				b := bus.ProvideBus(tracing.InitializeTracerForTest())
+				quotaService := quotatest.NewQuotaServiceFake(false, nil)
 				hs.userService = userimpl.ProvideService(
-					hs.SQLStore, nil, cfg, teamimpl.ProvideService(hs.SQLStore.(*sqlstore.SQLStore), cfg), localcache.ProvideService(),
-				)
-				hs.orgService = orgimpl.ProvideService(hs.SQLStore, cfg)
+					hs.SQLStore, nil, cfg, teamimpl.ProvideService(hs.SQLStore.(*sqlstore.SQLStore), cfg), localcache.ProvideService(), b, quotaService)
+				hs.orgService = orgimpl.ProvideService(hs.SQLStore, cfg, b, quotaService)
 			})
 			setupOrgUsersDBForAccessControlTests(t, sc.db)
 			setInitCtxSignedInUser(sc.initCtx, tc.user)

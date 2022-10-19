@@ -17,12 +17,6 @@ type Quota struct {
 	Updated time.Time
 }
 
-type QuotaScope struct {
-	Name         string
-	Target       string
-	DefaultLimit int64
-}
-
 type OrgQuotaDTO struct {
 	OrgId  int64  `json:"org_id"`
 	Target string `json:"target"`

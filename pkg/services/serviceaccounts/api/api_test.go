@@ -15,9 +15,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grafana/grafana/pkg/api/routing"
+	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/kvstore"
 	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	accesscontrolmock "github.com/grafana/grafana/pkg/services/accesscontrol/mock"
@@ -27,6 +29,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/licensing"
 	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/services/org/orgimpl"
+	"github.com/grafana/grafana/pkg/services/quota/quotatest"
 	"github.com/grafana/grafana/pkg/services/serviceaccounts"
 	"github.com/grafana/grafana/pkg/services/serviceaccounts/database"
 	"github.com/grafana/grafana/pkg/services/serviceaccounts/tests"
@@ -44,9 +47,11 @@ var (
 
 func TestServiceAccountsAPI_CreateServiceAccount(t *testing.T) {
 	store := db.InitTestDB(t)
-	apiKeyService := apikeyimpl.ProvideService(store, store.Cfg)
+	b := bus.ProvideBus(tracing.InitializeTracerForTest())
+	quotaService := quotatest.NewQuotaServiceFake(false, nil)
+	apiKeyService := apikeyimpl.ProvideService(store, store.Cfg, b, quotaService)
 	kvStore := kvstore.ProvideService(store)
-	orgService := orgimpl.ProvideService(store, setting.NewCfg())
+	orgService := orgimpl.ProvideService(store, setting.NewCfg(), b, quotatest.NewQuotaServiceFake(false, nil))
 	saStore := database.ProvideServiceAccountsStore(store, apiKeyService, kvStore, orgService)
 	svcmock := tests.ServiceAccountMock{}
 
@@ -212,7 +217,9 @@ func TestServiceAccountsAPI_CreateServiceAccount(t *testing.T) {
 func TestServiceAccountsAPI_DeleteServiceAccount(t *testing.T) {
 	store := db.InitTestDB(t)
 	kvStore := kvstore.ProvideService(store)
-	apiKeyService := apikeyimpl.ProvideService(store, store.Cfg)
+	b := bus.ProvideBus(tracing.InitializeTracerForTest())
+	quotaService := quotatest.NewQuotaServiceFake(false, nil)
+	apiKeyService := apikeyimpl.ProvideService(store, store.Cfg, b, quotaService)
 	saStore := database.ProvideServiceAccountsStore(store, apiKeyService, kvStore, nil)
 	svcmock := tests.ServiceAccountMock{}
 
@@ -284,7 +291,9 @@ func setupTestServer(t *testing.T, svc *tests.ServiceAccountMock,
 	sqlStore db.DB, saStore serviceaccounts.Store) (*web.Mux, *ServiceAccountsAPI) {
 	cfg := setting.NewCfg()
 	teamSvc := teamimpl.ProvideService(sqlStore, cfg)
-	userSvc := userimpl.ProvideService(sqlStore, nil, cfg, teamimpl.ProvideService(sqlStore, cfg), nil)
+
+	b := bus.ProvideBus(tracing.InitializeTracerForTest())
+	userSvc := userimpl.ProvideService(sqlStore, nil, cfg, teamimpl.ProvideService(sqlStore, cfg), nil, b, quotatest.NewQuotaServiceFake(false, nil))
 	saPermissionService, err := ossaccesscontrol.ProvideServiceAccountPermissions(
 		cfg, routing.NewRouteRegister(), sqlStore, acmock, &licensing.OSSLicensingService{}, saStore, acmock, teamSvc, userSvc)
 	require.NoError(t, err)
@@ -316,7 +325,9 @@ func setupTestServer(t *testing.T, svc *tests.ServiceAccountMock,
 
 func TestServiceAccountsAPI_RetrieveServiceAccount(t *testing.T) {
 	store := db.InitTestDB(t)
-	apiKeyService := apikeyimpl.ProvideService(store, store.Cfg)
+	b := bus.ProvideBus(tracing.InitializeTracerForTest())
+	quotaService := quotatest.NewQuotaServiceFake(false, nil)
+	apiKeyService := apikeyimpl.ProvideService(store, store.Cfg, b, quotaService)
 	kvStore := kvstore.ProvideService(store)
 	saStore := database.ProvideServiceAccountsStore(store, apiKeyService, kvStore, nil)
 	svcmock := tests.ServiceAccountMock{}
@@ -408,7 +419,9 @@ func newString(s string) *string {
 
 func TestServiceAccountsAPI_UpdateServiceAccount(t *testing.T) {
 	store := db.InitTestDB(t)
-	apiKeyService := apikeyimpl.ProvideService(store, store.Cfg)
+	b := bus.ProvideBus(tracing.InitializeTracerForTest())
+	quotaService := quotatest.NewQuotaServiceFake(false, nil)
+	apiKeyService := apikeyimpl.ProvideService(store, store.Cfg, b, quotaService)
 	kvStore := kvstore.ProvideService(store)
 	saStore := database.ProvideServiceAccountsStore(store, apiKeyService, kvStore, nil)
 	svcmock := tests.ServiceAccountMock{}

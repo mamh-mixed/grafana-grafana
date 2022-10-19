@@ -8,10 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/grafana/pkg/bus"
+	"github.com/grafana/grafana/pkg/events"
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/serverlock"
 	"github.com/grafana/grafana/pkg/models"
+	"github.com/grafana/grafana/pkg/services/quota"
 	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/util"
@@ -41,19 +44,34 @@ type UserAuthTokenService struct {
 	log               log.Logger
 }
 
+type ActiveTokenService interface {
+	ActiveTokenCount(ctx context.Context, _ *quota.ScopeParameters) (map[quota.Scope]int64, error)
+}
+
 type ActiveAuthTokenService struct {
 	cfg      *setting.Cfg
 	sqlStore db.DB
 }
 
-func ProvideActiveAuthTokenService(cfg *setting.Cfg, sqlStore db.DB) *ActiveAuthTokenService {
-	return &ActiveAuthTokenService{
+func ProvideActiveAuthTokenService(cfg *setting.Cfg, sqlStore db.DB, bus bus.Bus,
+	// add quota.Service as dependency to make sure that
+	// the listener has been added before publishing the reporter
+	_ quota.Service,
+) *ActiveAuthTokenService {
+	s := &ActiveAuthTokenService{
 		cfg:      cfg,
 		sqlStore: sqlStore,
 	}
+
+	bus.Publish(context.TODO(), &events.NewQuotaReporter{
+		TargetSrv: quota.TargetSrv("session"),
+		Reporter:  s.ActiveTokenCount,
+	})
+
+	return s
 }
 
-func (a *ActiveAuthTokenService) ActiveTokenCount(ctx context.Context) (int64, error) {
+func (a *ActiveAuthTokenService) ActiveTokenCount(ctx context.Context, _ *quota.ScopeParameters) (map[quota.Scope]int64, error) {
 	var count int64
 	var err error
 	err = a.sqlStore.WithDbSession(ctx, func(dbSession *db.Session) error {
@@ -66,7 +84,7 @@ func (a *ActiveAuthTokenService) ActiveTokenCount(ctx context.Context) (int64, e
 		return err
 	})
 
-	return count, err
+	return map[quota.Scope]int64{quota.GlobalScope: count}, err
 }
 
 func (s *UserAuthTokenService) CreateToken(ctx context.Context, user *user.User, clientIP net.IP, userAgent string) (*models.UserToken, error) {

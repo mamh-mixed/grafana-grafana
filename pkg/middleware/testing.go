@@ -17,6 +17,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/contexthandler"
 	"github.com/grafana/grafana/pkg/services/login/loginservice"
 	"github.com/grafana/grafana/pkg/services/org/orgtest"
+	"github.com/grafana/grafana/pkg/services/quota"
 	"github.com/grafana/grafana/pkg/services/user/usertest"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/web"
@@ -47,6 +48,7 @@ type scenarioContext struct {
 	userService          *usertest.FakeUserService
 	oauthTokenService    *auth.FakeOAuthTokenService
 	orgService           *orgtest.FakeOrgService
+	quotaService         quota.Service
 
 	req *http.Request
 }

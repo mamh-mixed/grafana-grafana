@@ -148,3 +148,20 @@ func (api *API) RegisterAPIEndpoints(m *metrics.API) {
 		alertRules:          api.AlertRules,
 	}), m)
 }
+
+func (api *API) Usage(ctx context.Context, scopeParams *quota.ScopeParameters) (map[quota.Scope]int64, error) {
+	u := make(map[quota.Scope]int64)
+	if orgUsage, err := api.RuleStore.Count(ctx, scopeParams.OrgID); err != nil {
+		return u, err
+	} else {
+		u[quota.OrgScope] = orgUsage
+	}
+
+	if globalUsage, err := api.RuleStore.Count(ctx, 0); err != nil {
+		return u, err
+	} else {
+		u[quota.GlobalScope] = globalUsage
+	}
+
+	return u, nil
+}

@@ -11,11 +11,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/db"
+	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/org"
+	"github.com/grafana/grafana/pkg/services/quota/quotatest"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/services/sqlstore/searchstore"
 	"github.com/grafana/grafana/pkg/services/star"
@@ -38,7 +41,9 @@ func TestIntegrationDashboardDataAccess(t *testing.T) {
 	setup := func() {
 		sqlStore, cfg = db.InitTestDBwithCfg(t)
 		starService = starimpl.ProvideService(sqlStore, cfg)
-		dashboardStore = ProvideDashboardStore(sqlStore, cfg, testFeatureToggles, tagimpl.ProvideService(sqlStore, cfg))
+		b := bus.ProvideBus(tracing.InitializeTracerForTest())
+		quotaService := quotatest.NewQuotaServiceFake(false, nil)
+		dashboardStore = ProvideDashboardStore(sqlStore, cfg, testFeatureToggles, tagimpl.ProvideService(sqlStore, cfg), b, quotaService)
 		savedFolder = insertTestDashboard(t, dashboardStore, "1 test dash folder", 1, 0, true, "prod", "webapp")
 		savedDash = insertTestDashboard(t, dashboardStore, "test dash 23", 1, savedFolder.Id, false, "prod", "webapp")
 		insertTestDashboard(t, dashboardStore, "test dash 45", 1, savedFolder.Id, false, "prod")
@@ -491,7 +496,9 @@ func TestIntegrationDashboardDataAccessGivenPluginWithImportedDashboards(t *test
 	sqlStore := db.InitTestDB(t)
 	cfg := setting.NewCfg()
 	cfg.IsFeatureToggleEnabled = func(key string) bool { return false }
-	dashboardStore := ProvideDashboardStore(sqlStore, &setting.Cfg{}, testFeatureToggles, tagimpl.ProvideService(sqlStore, cfg))
+	b := bus.ProvideBus(tracing.InitializeTracerForTest())
+	quotaService := quotatest.NewQuotaServiceFake(false, nil)
+	dashboardStore := ProvideDashboardStore(sqlStore, &setting.Cfg{}, testFeatureToggles, tagimpl.ProvideService(sqlStore, cfg), b, quotaService)
 	pluginId := "test-app"
 
 	appFolder := insertTestDashboardForPlugin(t, dashboardStore, "app-test", 1, 0, true, pluginId)
@@ -515,7 +522,9 @@ func TestIntegrationDashboard_SortingOptions(t *testing.T) {
 	sqlStore := db.InitTestDB(t)
 	cfg := setting.NewCfg()
 	cfg.IsFeatureToggleEnabled = func(key string) bool { return false }
-	dashboardStore := ProvideDashboardStore(sqlStore, &setting.Cfg{}, testFeatureToggles, tagimpl.ProvideService(sqlStore, cfg))
+	b := bus.ProvideBus(tracing.InitializeTracerForTest())
+	quotaService := quotatest.NewQuotaServiceFake(false, nil)
+	dashboardStore := ProvideDashboardStore(sqlStore, &setting.Cfg{}, testFeatureToggles, tagimpl.ProvideService(sqlStore, cfg), b, quotaService)
 
 	dashB := insertTestDashboard(t, dashboardStore, "Beta", 1, 0, false)
 	dashA := insertTestDashboard(t, dashboardStore, "Alfa", 1, 0, false)
@@ -566,7 +575,9 @@ func TestIntegrationDashboard_Filter(t *testing.T) {
 	sqlStore := db.InitTestDB(t)
 	cfg := setting.NewCfg()
 	cfg.IsFeatureToggleEnabled = func(key string) bool { return false }
-	dashboardStore := ProvideDashboardStore(sqlStore, cfg, testFeatureToggles, tagimpl.ProvideService(sqlStore, cfg))
+	b := bus.ProvideBus(tracing.InitializeTracerForTest())
+	quotaService := quotatest.NewQuotaServiceFake(false, nil)
+	dashboardStore := ProvideDashboardStore(sqlStore, cfg, testFeatureToggles, tagimpl.ProvideService(sqlStore, cfg), b, quotaService)
 	insertTestDashboard(t, dashboardStore, "Alfa", 1, 0, false)
 	dashB := insertTestDashboard(t, dashboardStore, "Beta", 1, 0, false)
 	qNoFilter := &models.FindPersistedDashboardsQuery{

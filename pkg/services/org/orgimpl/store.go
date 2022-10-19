@@ -14,6 +14,8 @@ import (
 	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/org"
+	"github.com/grafana/grafana/pkg/services/quota"
+	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/services/sqlstore/migrator"
 	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/grafana/grafana/pkg/setting"
@@ -42,6 +44,8 @@ type store interface {
 	GetByName(context.Context, *org.GetOrgByNameQuery) (*org.Org, error)
 	SearchOrgUsers(context.Context, *org.SearchOrgUsersQuery) (*org.SearchOrgUsersQueryResult, error)
 	RemoveOrgUser(context.Context, *org.RemoveOrgUserCommand) error
+
+	Count(context.Context, *quota.ScopeParameters) (map[quota.Scope]int64, error)
 }
 
 type sqlStore struct {
@@ -393,6 +397,60 @@ func (ss *sqlStore) AddOrgUser(ctx context.Context, cmd *org.AddOrgUserCommand) 
 
 		return nil
 	})
+}
+
+func (ss *sqlStore) Count(ctx context.Context, scopeParams *quota.ScopeParameters) (map[quota.Scope]int64, error) {
+	u := make(map[quota.Scope]int64)
+	type result struct {
+		Count int64
+	}
+
+	r := result{}
+	if err := ss.db.WithDbSession(ctx, func(sess *sqlstore.DBSession) error {
+		rawSQL := fmt.Sprintf("SELECT COUNT(*) as count from alert_rule")
+		if _, err := sess.SQL(rawSQL).Get(&r); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return u, err
+	} else {
+		u[quota.GlobalScope] = r.Count
+	}
+
+	if scopeParams.OrgID != 0 {
+		if err := ss.db.WithDbSession(ctx, func(sess *sqlstore.DBSession) error {
+			rawSQL := fmt.Sprintf("SELECT COUNT(*) AS count FROM (SELECT user_id FROM org_user WHERE org_id=? AND user_id IN (SELECT id AS user_id FROM %s WHERE is_service_account=%s)) as subq",
+				ss.db.GetDialect().Quote("user"),
+				ss.db.GetDialect().BooleanStr(false),
+			)
+			if _, err := sess.SQL(rawSQL, scopeParams.OrgID).Get(&r); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return u, err
+		} else {
+			u[quota.OrgScope] = r.Count
+		}
+	}
+
+	if scopeParams.UserID != 0 {
+		if err := ss.db.WithDbSession(ctx, func(sess *sqlstore.DBSession) error {
+			// should we exclude service accounts?
+			rawSQL := fmt.Sprintf("SELECT COUNT(*) AS count FROM org_user WHERE user_id=?")
+			if _, err := sess.SQL(rawSQL, scopeParams.UserID).Get(&r); err != nil {
+				return err
+			}
+			return nil
+		}); err != nil {
+			return u, err
+		} else {
+			u[quota.OrgScope] = r.Count
+		}
+	}
+
+	return u, nil
 }
 
 func setUsingOrgInTransaction(sess *db.Session, userID int64, orgID int64) error {
