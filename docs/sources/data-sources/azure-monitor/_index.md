@@ -27,6 +27,10 @@ This topic explains configuring and querying specific to the Azure Monitor data 
 For instructions on how to add a data source to Grafana, refer to the [administration documentation]({{< relref "/administration/data-source-management/" >}}).
 Only users with the organization administrator role can add data sources.
 
+> **Note:** You can use [Grafana Cloud](/products/cloud/features/#cloud-logs) to avoid the overhead of installing, maintaining, and scaling your observability stack.
+> The free forever plan includes Grafana, 10K Prometheus series, 50 GB logs, and more.
+> [Create a free account to get started](https://grafana.com/auth/sign-up/create-user?pg=docs-grafana-install&plcmt=in-text).
+
 The Azure Monitor data source supports visualizing data from three Azure services:
 
 - **Azure Monitor Metrics:** Collect numeric data from resources in your Azure account.
@@ -35,7 +39,7 @@ The Azure Monitor data source supports visualizing data from three Azure service
 
 ## Configure the data source
 
-**To configure the data source:**
+**To access the data source configuration page:**
 
 1. Hover the cursor over the **Configuration** (gear) icon.
 1. Select **Data Sources**.
@@ -52,15 +56,15 @@ For more information, refer to [Azure documentation for role assignments](https:
 If you host Grafana in Azure, such as in App Service or Azure Virtual Machines, you can configure the Azure Monitor data source to use Managed Identity for secure authentication without entering credentials into Grafana.
 For details, refer to [Configuring using Managed Identity](#configuring-using-managed-identity).
 
-| Name                    | Description                                                                                                                                                                                                                                                                                           |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Authentication          | Enables Managed Identity. Selecting Managed Identity hides many of the other fields. For details, see [Configuring using Managed Identity](#configuring-using-managed-identity).                                                                                                                      |
-| Azure Cloud             | Sets the national cloud for your Azure account. For most users, this is the default "Azure". For details, see the [Azure documentation](https://docs.microsoft.com/en-us/azure/active-directory/develop/authentication-national-cloud).                                                               |
-| Directory (tenant) ID   | Sets the directory/tenant ID for the Azure AD app registration to use for authentication. For details, see the [Azure tenant and app ID docs](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal#get-tenant-and-app-id-values-for-signing-in).     |
-| Application (client) ID | Sets the application/client ID for the Azure AD app registration to use for authentication.                                                                                                                                                                                                           |
-| Client secret           | Sets the application client secret for the Azure AD app registration to use for authentication. For details, see the [Azure application secret docs](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal#option-2-create-a-new-application-secret). |
-| Default subscription    | _(optional)_ Sets a default subscription for template variables to use.                                                                                                                                                                                                                               |
-| Default workspace       | _(optional)_ Sets a default workspace for Log Analytics-based template variable queries to use.                                                                                                                                                                                                       |
+| Name                        | Description                                                                                                                                                                                                                                                                                           |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Authentication**          | Enables Managed Identity. Selecting Managed Identity hides many of the other fields. For details, see [Configuring using Managed Identity](#configuring-using-managed-identity).                                                                                                                      |
+| **Azure Cloud**             | Sets the national cloud for your Azure account. For most users, this is the default "Azure". For details, see the [Azure documentation](https://docs.microsoft.com/en-us/azure/active-directory/develop/authentication-national-cloud).                                                               |
+| **Directory (tenant) ID**   | Sets the directory/tenant ID for the Azure AD app registration to use for authentication. For details, see the [Azure tenant and app ID docs](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal#get-tenant-and-app-id-values-for-signing-in).     |
+| **Application (client) ID** | Sets the application/client ID for the Azure AD app registration to use for authentication.                                                                                                                                                                                                           |
+| **Client secret**           | Sets the application client secret for the Azure AD app registration to use for authentication. For details, see the [Azure application secret docs](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal#option-2-create-a-new-application-secret). |
+| **Default subscription**    | _(Optional)_ Sets a default subscription for template variables to use.                                                                                                                                                                                                                               |
+| **Default workspace**       | _(Optional)_ Sets a default workspace for Log Analytics-based template variable queries to use.                                                                                                                                                                                                       |
 
 ### Provision the data source
 
@@ -106,14 +110,14 @@ datasources:
 
 #### Supported cloud names
 
-| Azure Cloud                                      | `cloudName` Value          |
-| ------------------------------------------------ | -------------------------- |
-| Microsoft Azure public cloud                     | `azuremonitor` (_default_) |
-| Microsoft Chinese national cloud                 | `chinaazuremonitor`        |
-| US Government cloud                              | `govazuremonitor`          |
-| Microsoft German national cloud ("Black Forest") | `germanyazuremonitor`      |
+| Azure Cloud                                          | `cloudName` Value          |
+| ---------------------------------------------------- | -------------------------- |
+| **Microsoft Azure public cloud**                     | `azuremonitor` (_Default_) |
+| **Microsoft Chinese national cloud**                 | `chinaazuremonitor`        |
+| **US Government cloud**                              | `govazuremonitor`          |
+| **Microsoft German national cloud ("Black Forest")** | `germanyazuremonitor`      |
 
-### Configuring using Managed Identity
+### Configure Managed Identity
 
 If you host Grafana in Azure, such as an App Service or with Azure Virtual Machines, and have managed identity enabled on your VM, you can use managed identity to configure Azure Monitor in Grafana.
 This lets you securely authenticate data sources without manually configuring credentials via Azure AD App Registrations for each.
@@ -134,7 +138,7 @@ For details on Azure managed identities, refer to the [Azure documentation](http
 
    {{< figure src="/static/img/docs/azure-monitor/managed-identity.png" max-width="800px" class="docs-image--no-shadow" caption="Azure Monitor Metrics screenshot showing Dimensions" >}}
 
-## Azure Monitor query editor
+## Query the data source
 
 The CloudWatch data source can query data from Azure Monitor Metrics and Logs, and the Azure Resource Graph, each with its own specialized query editor.
 

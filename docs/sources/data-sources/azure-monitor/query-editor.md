@@ -11,7 +11,7 @@ keywords:
   - metrics
   - logs
   - resources
-  - querying
+  - queries
 title: Azure Monitor data source query editor
 menuTitle: Query editor
 weight: 300
