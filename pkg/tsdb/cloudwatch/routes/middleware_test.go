@@ -45,5 +45,4 @@ func Test_Middleware(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, rr.Code)
 		assert.Equal(t, `{"Message":"error: error from handler","Error":"error from handler","StatusCode":400}`, rr.Body.String())
 	})
-
 }

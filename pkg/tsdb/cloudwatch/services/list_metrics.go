@@ -102,7 +102,6 @@ func (l *ListMetricsService) GetDimensionValuesByDimensionFilter(r *request.Dime
 
 	sort.Strings(dimensionValues)
 	return dimensionValues, nil
-
 }
 
 func (l *ListMetricsService) GetDimensionKeysByNamespace(namespace string) ([]string, error) {
