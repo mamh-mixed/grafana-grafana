@@ -100,13 +100,13 @@ export class CloudWatchAPI extends CloudWatchRequest {
       return [];
     }
 
-    const values = await this.memoizedGetRequest<SelectableResourceValue[]>('dimension-values', {
+    const values = await this.memoizedGetRequest<string[]>('dimension-values', {
       region: this.templateSrv.replace(this.getActualRegion(region)),
       namespace: this.templateSrv.replace(namespace),
       metricName: this.templateSrv.replace(metricName.trim()),
       dimensionKey: this.templateSrv.replace(dimensionKey),
       dimensionFilters: JSON.stringify(this.convertDimensionFormat(dimensionFilters, {})),
-    });
+    }).then((dimensionValues) => dimensionValues.map(toOption));
 
     return values;
   }
