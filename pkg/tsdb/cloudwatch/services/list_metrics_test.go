@@ -6,7 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/mocks"
-	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models"
+	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models/request"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -64,11 +64,11 @@ func TestListMetricsService_GetDimensionKeysByDimensionFilter(t *testing.T) {
 		fakeMetricsClient.On("ListMetricsWithPageLimit", mock.Anything).Return(metricResponse, nil)
 		listMetricsService := NewListMetricsService(fakeMetricsClient)
 
-		resp, err := listMetricsService.GetDimensionKeysByDimensionFilter(&models.DimensionKeysRequest{
-			Region:     "us-east-1",
-			Namespace:  "AWS/EC2",
-			MetricName: "CPUUtilization",
-			DimensionFilter: []*models.Dimension{
+		resp, err := listMetricsService.GetDimensionKeysByDimensionFilter(&request.DimensionKeysRequest{
+			ResourceRequest: &request.ResourceRequest{Region: "us-east-1"},
+			Namespace:       "AWS/EC2",
+			MetricName:      "CPUUtilization",
+			DimensionFilter: []*request.Dimension{
 				{Name: "InstanceId", Value: ""},
 			},
 		})
