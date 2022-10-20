@@ -46,8 +46,8 @@ type metricsDataQuery struct {
 }
 
 // ParseQueries parses the json queries and returns a map of cloudWatchQueries by region. The cloudWatchQuery has a 1 to 1 mapping to a query editor row
-func ParseQueries(queries []backend.DataQuery, startTime time.Time, endTime time.Time, dynamicLabelsEnabled bool) (map[string][]*CloudWatchQuery, error) {
-	result := make(map[string][]*CloudWatchQuery)
+func ParseQueries(queries []backend.DataQuery, startTime time.Time, endTime time.Time, dynamicLabelsEnabled bool) ([]*CloudWatchQuery, error) {
+	var result []*CloudWatchQuery
 	migratedQueries, err := migrateLegacyQuery(queries, dynamicLabelsEnabled)
 	if err != nil {
 		return nil, err
@@ -70,16 +70,12 @@ func ParseQueries(queries []backend.DataQuery, startTime time.Time, endTime time
 			metricsDataQuery.MatchExact = &trueBooleanValue
 		}
 
-		refID := query.RefID
-		query, err := parseRequestQuery(metricsDataQuery, refID, startTime, endTime)
+		refID := metricsDataQuery.RefId
+		cwQuery, err := parseRequestQuery(metricsDataQuery, refID, startTime, endTime)
 		if err != nil {
 			return nil, &QueryError{Err: err, RefID: refID}
 		}
-
-		if _, exist := result[query.Region]; !exist {
-			result[query.Region] = []*CloudWatchQuery{}
-		}
-		result[query.Region] = append(result[query.Region], query)
+		result = append(result, cwQuery)
 	}
 
 	return result, nil
