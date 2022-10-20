@@ -10,9 +10,11 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/aws/aws-sdk-go/service/cloudwatch/cloudwatchiface"
+	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/mocks"
@@ -137,6 +139,110 @@ func TestTimeSeriesQuery(t *testing.T) {
 			To:   now.Add(time.Hour * -1),
 		}}}})
 		assert.EqualError(t, err, "invalid time range: start time must be before end time")
+	})
+}
+
+func Test_queries_grouped_by_region(t *testing.T) {
+	origNewCWClient := NewCWClient
+	t.Cleanup(func() {
+		NewCWClient = origNewCWClient
+	})
+	var api mocks.FakeMetricsAPI
+
+	NewCWClient = func(sess *session.Session) cloudwatchiface.CloudWatchAPI {
+		return &api
+	}
+	im := datasource.NewInstanceManager(func(s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
+		return datasourceInfo{}, nil
+	})
+	now := time.Now()
+	t.Run("Two different regions called once each", func(t *testing.T) {
+		sessionCache := &mockSessionCache{}
+		sessionCache.On("GetSession", mock.MatchedBy(
+			func(config awsds.SessionConfig) bool { return config.Settings.Region == "us-east-2" })).
+			Return(nil, nil).Once()
+		sessionCache.On("GetSession", mock.MatchedBy(
+			func(config awsds.SessionConfig) bool { return config.Settings.Region == "us-east-1" })).
+			Return(nil, nil).Once()
+
+		executor := newExecutor(im, newTestConfig(), sessionCache, featuremgmt.WithFeatures())
+		_, err := executor.QueryData(context.Background(), &backend.QueryDataRequest{
+			PluginContext: backend.PluginContext{
+				DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{},
+			},
+			Queries: []backend.DataQuery{
+				{
+					RefID:     "A",
+					TimeRange: backend.TimeRange{From: now.Add(time.Hour * -2), To: now.Add(time.Hour * -1)},
+					JSON: json.RawMessage(`{
+						"type":      "timeSeriesQuery",
+						"namespace": "AWS/EC2",
+						"metricName": "NetworkOut",
+						"region": "us-east-2",
+						"statistic": "Maximum",
+						"period": "300"
+					}`),
+				},
+				{
+					RefID:     "B",
+					TimeRange: backend.TimeRange{From: now.Add(time.Hour * -2), To: now.Add(time.Hour * -1)},
+					JSON: json.RawMessage(`{
+						"type":      "timeSeriesQuery",
+						"namespace": "AWS/EC2",
+						"metricName": "NetworkIn",
+						"region": "us-east-1",
+						"statistic": "Maximum",
+						"period": "300"
+					}`),
+				},
+			},
+		})
+
+		require.NoError(t, err)
+		sessionCache.AssertExpectations(t)
+	})
+
+	t.Run("Two queries with same region test", func(t *testing.T) {
+		sessionCache := &mockSessionCache{}
+		sessionCache.On("GetSession", mock.MatchedBy(
+			func(config awsds.SessionConfig) bool { return config.Settings.Region == "us-east-1" })).
+			Return(nil, nil).Once()
+
+		executor := newExecutor(im, newTestConfig(), sessionCache, featuremgmt.WithFeatures())
+		_, err := executor.QueryData(context.Background(), &backend.QueryDataRequest{
+			PluginContext: backend.PluginContext{
+				DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{},
+			},
+			Queries: []backend.DataQuery{
+				{
+					RefID:     "A",
+					TimeRange: backend.TimeRange{From: now.Add(time.Hour * -2), To: now.Add(time.Hour * -1)},
+					JSON: json.RawMessage(`{
+						"type":      "timeSeriesQuery",
+						"namespace": "AWS/EC2",
+						"metricName": "NetworkOut",
+						"region": "us-east-1",
+						"statistic": "Maximum",
+						"period": "300"
+					}`),
+				},
+				{
+					RefID:     "B",
+					TimeRange: backend.TimeRange{From: now.Add(time.Hour * -2), To: now.Add(time.Hour * -1)},
+					JSON: json.RawMessage(`{
+						"type":      "timeSeriesQuery",
+						"namespace": "AWS/EC2",
+						"metricName": "NetworkIn",
+						"region": "us-east-1",
+						"statistic": "Maximum",
+						"period": "300"
+					}`),
+				},
+			},
+		})
+
+		require.NoError(t, err)
+		sessionCache.AssertExpectations(t)
 	})
 }
 
