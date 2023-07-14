@@ -20,6 +20,9 @@ import (
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 )
 
+// label that is used when all mathexp.Series have 0 labels to make them identifiable by labels. The value of this label is extracted from value field names
+const nameLabelName = "__name__"
+
 var (
 	logger = log.New("expr")
 )
@@ -295,7 +298,6 @@ func convertDataFramesToResults(ctx context.Context, frames data.Frames, datasou
 		return "no-data", mathexp.Results{Values: mathexp.Values{mathexp.NewNoData()}}, nil
 	}
 
-	vals := make([]mathexp.Value, 0)
 	var dt data.FrameType
 	dt, useDataplane, _ := shouldUseDataplane(frames, logger, s.features.IsEnabled(featuremgmt.FlagDisableSSEDataplane))
 	if useDataplane {
@@ -325,6 +327,7 @@ func convertDataFramesToResults(ctx context.Context, frames data.Frames, datasou
 			if err != nil {
 				return "", mathexp.Results{}, err
 			}
+			vals := make([]mathexp.Value, 0, len(numberSet))
 			for _, n := range numberSet {
 				vals = append(vals, n)
 			}
@@ -334,26 +337,42 @@ func convertDataFramesToResults(ctx context.Context, frames data.Frames, datasou
 		}
 	}
 
+	vals := make([]mathexp.Value, 0, len(frames)*len(frames[0].TimeSeriesSchema().ValueIndices))
+	filtered := make([]*data.Frame, 0, len(frames))
 	for _, frame := range frames {
+		schema := frame.TimeSeriesSchema()
 		// Check for TimeSeriesTypeNot in InfluxDB queries. A data frame of this type will cause
 		// the WideToMany() function to error out, which results in unhealthy alerts.
 		// This check should be removed once inconsistencies in data source responses are solved.
-		if frame.TimeSeriesSchema().Type == data.TimeSeriesTypeNot && datasourceType == datasources.DS_INFLUXDB {
+		if schema.Type == data.TimeSeriesTypeNot && datasourceType == datasources.DS_INFLUXDB {
 			logger.Warn("Ignoring InfluxDB data frame due to missing numeric fields")
 			continue
 		}
-		var series []mathexp.Series
-		series, err := WideToMany(frame)
-		if err != nil {
-			return "", mathexp.Results{}, err
+		if schema.Type != data.TimeSeriesTypeWide {
+			return "", mathexp.Results{}, fmt.Errorf("input data must be a wide series but got type %s (input refid)", schema.Type)
 		}
-		for _, ser := range series {
-			vals = append(vals, ser)
-		}
+		filtered = append(filtered, frame)
 	}
 
-	return "series set", mathexp.Results{
-		Values: vals, // TODO vals can be empty. Should we replace with no-data?
+	if len(filtered) == 0 {
+		return "no data", mathexp.Results{Values: mathexp.Values{mathexp.NoData{Frame: frames[0]}}}, nil
+	}
+
+	series, err := WideToMany(filtered)
+	if err != nil {
+		return "", mathexp.Results{}, err
+	}
+	for _, ser := range series {
+		vals = append(vals, ser)
+	}
+
+	dataType := "single frame series"
+	if len(filtered) > 1 {
+		dataType = "multi frame series"
+	}
+
+	return dataType, mathexp.Results{
+		Values: vals,
 	}, nil
 }
 
@@ -466,42 +485,122 @@ func extractNumberSet(frame *data.Frame) ([]mathexp.Number, error) {
 // is created for each value type column of wide frame.
 //
 // This might not be a good idea long term, but works now as an adapter/shim.
-func WideToMany(frame *data.Frame) ([]mathexp.Series, error) {
-	tsSchema := frame.TimeSeriesSchema()
-	if tsSchema.Type != data.TimeSeriesTypeWide {
-		return nil, fmt.Errorf("input data must be a wide series but got type %s (input refid)", tsSchema.Type)
+func WideToMany(frames []*data.Frame) ([]mathexp.Series, error) {
+	// determine whether all potential series have 0 labels. If there is at least one value field with non-zero labels, the slice will be empty
+	valueFieldsWithEmptyLabels := make([]*data.Field, 0, len(frames)*len(frames[0].TimeSeriesSchema().ValueIndices)) // make a best guess for the size
+LABELS:
+	for _, frame := range frames {
+		tsSchema := frame.TimeSeriesSchema()
+		for _, index := range tsSchema.ValueIndices {
+			if len(frame.Fields[index].Labels) > 0 {
+				valueFieldsWithEmptyLabels = nil
+				break LABELS
+			}
+			valueFieldsWithEmptyLabels = append(valueFieldsWithEmptyLabels, frame.Fields[index])
+		}
 	}
 
-	if len(tsSchema.ValueIndices) == 1 {
-		s, err := mathexp.SeriesFromFrame(frame)
-		if err != nil {
-			return nil, err
-		}
-		return []mathexp.Series{s}, nil
+	// use name selector because it
+	var nameSelector func(field *data.Field) string
+	// try to find name that would let each series to be identifiable
+	if len(valueFieldsWithEmptyLabels) > 0 {
+		nameSelector = getUniqueNameSelector(valueFieldsWithEmptyLabels)
 	}
 
-	series := []mathexp.Series{}
-	for _, valIdx := range tsSchema.ValueIndices {
-		l := frame.Rows()
-		f := data.NewFrameOfFieldTypes(frame.Name, l, frame.Fields[tsSchema.TimeIndex].Type(), frame.Fields[valIdx].Type())
-		f.Fields[0].Name = frame.Fields[tsSchema.TimeIndex].Name
-		f.Fields[1].Name = frame.Fields[valIdx].Name
+	series := make([]mathexp.Series, 0, len(frames)*len(frames[0].TimeSeriesSchema().ValueIndices))
+	for _, frame := range frames {
+		tsSchema := frame.TimeSeriesSchema()
+		if tsSchema.Type != data.TimeSeriesTypeWide {
+			return nil, fmt.Errorf("input data must be a wide series but got type %s (input refid)", tsSchema.Type)
+		}
 
-		// The new value fields' configs gets pointed to the one in the original frame
-		f.Fields[1].Config = frame.Fields[valIdx].Config
+		if len(tsSchema.ValueIndices) == 1 {
+			s, err := mathexp.SeriesFromFrame(frame)
+			if err != nil {
+				return nil, err
+			}
+			if nameSelector != nil {
+				s.SetLabels(data.Labels{
+					nameLabelName: nameSelector(frame.Fields[tsSchema.ValueIndices[0]]),
+				})
+			}
+			series = append(series, s)
+			continue
+		}
 
-		if frame.Fields[valIdx].Labels != nil {
-			f.Fields[1].Labels = frame.Fields[valIdx].Labels.Copy()
+		for _, valIdx := range tsSchema.ValueIndices {
+			l := frame.Rows()
+			f := data.NewFrameOfFieldTypes(frame.Name, l, frame.Fields[tsSchema.TimeIndex].Type(), frame.Fields[valIdx].Type())
+			f.Fields[0].Name = frame.Fields[tsSchema.TimeIndex].Name
+			f.Fields[1].Name = frame.Fields[valIdx].Name
+
+			// The new value fields' configs gets pointed to the one in the original frame
+			f.Fields[1].Config = frame.Fields[valIdx].Config
+
+			if frame.Fields[valIdx].Labels != nil {
+				f.Fields[1].Labels = frame.Fields[valIdx].Labels.Copy()
+			}
+			for i := 0; i < l; i++ {
+				f.SetRow(i, frame.Fields[tsSchema.TimeIndex].CopyAt(i), frame.Fields[valIdx].CopyAt(i))
+			}
+			s, err := mathexp.SeriesFromFrame(f)
+			if err != nil {
+				return nil, err
+			}
+			if nameSelector != nil {
+				s.SetLabels(data.Labels{
+					nameLabelName: nameSelector(frame.Fields[valIdx]),
+				})
+			}
+			series = append(series, s)
 		}
-		for i := 0; i < l; i++ {
-			f.SetRow(i, frame.Fields[tsSchema.TimeIndex].CopyAt(i), frame.Fields[valIdx].CopyAt(i))
-		}
-		s, err := mathexp.SeriesFromFrame(f)
-		if err != nil {
-			return nil, err
-		}
-		series = append(series, s)
 	}
 
 	return series, nil
+}
+
+// getUniqueNameSelector check all fields in the slice and tries to find name that would let all fields to be identifiable. Empty names are not allowed.
+// Returns a function that extracts the information from the field
+func getUniqueNameSelector(fields []*data.Field) func(f *data.Field) string {
+	isUnique := func(getName func(field *data.Field) string) bool {
+		names := make(map[string]*data.Field, len(fields))
+		for _, f := range fields {
+			n := getName(f)
+			if n == "" {
+				return false
+			}
+			if _, ok := names[n]; ok {
+				return false
+			}
+			names[n] = f
+		}
+		return true
+	}
+
+	nameSelectors := []func(f *data.Field) string{
+		func(f *data.Field) string {
+			if f == nil || f.Config == nil {
+				return ""
+			}
+			return f.Config.DisplayNameFromDS
+		},
+		func(f *data.Field) string {
+			if f == nil || f.Config == nil {
+				return ""
+			}
+			return f.Config.DisplayName
+		},
+		func(f *data.Field) string {
+			return f.Name
+		},
+	}
+
+	for _, selector := range nameSelectors {
+		// now pick name that will make the values identifiable
+		if isUnique(selector) {
+			return selector
+		}
+	}
+
+	return nil
 }

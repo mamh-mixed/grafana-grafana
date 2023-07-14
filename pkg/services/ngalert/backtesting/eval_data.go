@@ -21,7 +21,7 @@ type dataEvaluator struct {
 }
 
 func newDataEvaluator(refID string, frame *data.Frame) (*dataEvaluator, error) {
-	series, err := expr.WideToMany(frame)
+	series, err := expr.WideToMany([]*data.Frame{frame})
 	if err != nil {
 		return nil, err
 	}
