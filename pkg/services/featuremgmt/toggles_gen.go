@@ -394,4 +394,8 @@ const (
 	// FlagDisableTraceQLStreaming
 	// Disables the option to stream the response of TraceQL queries of the Tempo data source
 	FlagDisableTraceQLStreaming = "disableTraceQLStreaming"
+
+	// FlagAwsAsyncQueryCaching
+	// Enable caching for async query for Redshift and Athena. Requires useCachingService and the datasource to have caching and async query support enabled
+	FlagAwsAsyncQueryCaching = "awsAsyncQueryCaching"
 )
