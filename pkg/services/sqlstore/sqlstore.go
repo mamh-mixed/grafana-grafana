@@ -403,19 +403,17 @@ func (ss *SQLStore) initEngine(engine *xorm.Engine) error {
 			}
 		}
 	}
-	if engine == nil {
-		var err error
-		engine, err = xorm.NewEngine(ss.dbCfg.Type, connectionString)
+
+	engine, err = xorm.NewEngine(ss.dbCfg.Type, connectionString)
+	if err != nil {
+		return err
+	}
+	// Only for MySQL or MariaDB, verify we can connect with the current connection string's system var for transaction isolation.
+	// If not, create a new engine with a compatible connection string.
+	if ss.dbCfg.Type == migrator.MySQL {
+		engine, err = ss.ensureTransactionIsolationCompatibility(engine, connectionString)
 		if err != nil {
 			return err
-		}
-		// Only for MySQL or MariaDB, verify we can connect with the current connection string's system var for transaction isolation.
-		// If not, create a new engine with a compatible connection string.
-		if ss.dbCfg.Type == migrator.MySQL {
-			engine, err = ss.ensureTransactionIsolationCompatibility(engine, connectionString)
-			if err != nil {
-				return err
-			}
 		}
 	}
 

@@ -285,6 +285,8 @@ require (
 
 require github.com/grafana/gofpdf v0.0.0-20231002120153-857cc45be447 // @grafana/sharing-squad
 
+require github.com/oklog/ulid/v2 v2.1.0 // @grafana/grafana-app-platform-squad
+
 require (
 	cloud.google.com/go v0.110.6 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect

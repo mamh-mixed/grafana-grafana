@@ -42,7 +42,7 @@ func (gs *SessionDB) NamedExec(ctx context.Context, query string, arg any) (sql.
 	return gs.sqlxdb.NamedExecContext(ctx, gs.sqlxdb.Rebind(query), arg)
 }
 
-func (gs *SessionDB) driverName() string {
+func (gs *SessionDB) DriverName() string {
 	return gs.sqlxdb.DriverName()
 }
 
@@ -69,7 +69,7 @@ func (gs *SessionDB) WithTransaction(ctx context.Context, callback func(*Session
 }
 
 func (gs *SessionDB) ExecWithReturningId(ctx context.Context, query string, args ...any) (int64, error) {
-	return execWithReturningId(ctx, gs.driverName(), query, gs, args...)
+	return execWithReturningId(ctx, gs.DriverName(), query, gs, args...)
 }
 
 type SessionTx struct {

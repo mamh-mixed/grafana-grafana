@@ -56,6 +56,12 @@ func (codec *rawEntityCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream)
 	stream.WriteObjectField("GRN")
 	stream.WriteVal(obj.GRN)
 
+	if obj.Guid != "" {
+		stream.WriteMore()
+		stream.WriteObjectField("guid")
+		stream.WriteString(obj.Guid)
+	}
+
 	if obj.Version != "" {
 		stream.WriteMore()
 		stream.WriteObjectField("version")
@@ -132,6 +138,8 @@ func readEntity(iter *jsoniter.Iterator, raw *Entity) {
 		case "GRN":
 			raw.GRN = &grn.GRN{}
 			iter.ReadVal(raw.GRN)
+		case "guid":
+			raw.Guid = iter.ReadString()
 		case "updatedAt":
 			raw.UpdatedAt = iter.ReadInt64()
 		case "updatedBy":
@@ -151,6 +159,7 @@ func readEntity(iter *jsoniter.Iterator, raw *Entity) {
 		case "origin":
 			raw.Origin = &EntityOriginInfo{}
 			iter.ReadVal(raw.Origin)
+
 		case "summary":
 			var val interface{}
 			iter.ReadVal(&val) // ??? is there a smarter way to just keep the underlying bytes without read+marshal

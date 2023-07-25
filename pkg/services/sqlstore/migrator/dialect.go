@@ -73,6 +73,9 @@ type Dialect interface {
 	Unlock(LockCfg) error
 
 	GetDBName(string) (string, error)
+
+	InsertQuery(tableName string, row map[string]interface{}) (string, []interface{}, error)
+	UpdateQuery(tableName string, row map[string]interface{}, where map[string]interface{}) (string, []interface{}, error)
 }
 
 type LockCfg struct {
@@ -343,4 +346,30 @@ func (b *BaseDialect) OrderBy(order string) string {
 
 func (b *BaseDialect) GetDBName(_ string) (string, error) {
 	return "", nil
+}
+
+func (b *BaseDialect) InsertQuery(tableName string, row map[string]interface{}) (string, []interface{}, error) {
+	cols := []string{}
+	vals := []interface{}{}
+	for col, val := range row {
+		cols = append(cols, b.dialect.Quote(col))
+		vals = append(vals, val)
+	}
+	return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", b.dialect.Quote(tableName), strings.Join(cols, ", "), strings.Repeat("?, ", len(row)-1)+"?"), vals, nil
+}
+
+func (b *BaseDialect) UpdateQuery(tableName string, row map[string]interface{}, where map[string]interface{}) (string, []interface{}, error) {
+	cols := []string{}
+	vals := []interface{}{}
+	for col, val := range row {
+		cols = append(cols, b.dialect.Quote(col)+"=?")
+		vals = append(vals, val)
+	}
+
+	whereCols := []string{}
+	for col, val := range where {
+		whereCols = append(whereCols, b.dialect.Quote(col)+"=?")
+		vals = append(vals, val)
+	}
+	return fmt.Sprintf("UPDATE %s SET %s WHERE %s", b.dialect.Quote(tableName), strings.Join(cols, ", "), strings.Join(whereCols, " AND ")), vals, nil
 }
