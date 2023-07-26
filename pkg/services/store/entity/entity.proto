@@ -37,17 +37,20 @@ message Entity {
   // Content Length
   int64 size = 10;
 
+  // Commit comment (optional)
+  string comment = 11;
+
   // Raw meta from k8s
-  bytes meta = 11;
+  bytes meta = 12;
 
   // Raw bytes of the storage entity.  The kind will determine what is a valid payload
-  bytes body = 12;
+  bytes body = 13;
 
   // k8s style status (ignored for now)
-  bytes status = 13;
+  bytes status = 14;
 
   // Entity summary as JSON
-  bytes summary_json = 14;
+  bytes summary_json = 15;
 
   // External location info
   EntityOriginInfo origin = 16;
@@ -76,37 +79,6 @@ message EntityErrorInfo {
 
   // Details encoded in JSON
   bytes details_json = 3;
-}
-
-// This is a subset of Entity that does not include body or sync info
-message EntityVersionInfo {
-  string guid = 1;
-
-  // The version will change when the entity is saved. It is not necessarily sortable
-  string version = 2;
-
-  // Time in epoch milliseconds that the entity was created
-  int64 created_at = 3;
-
-  // Who created the entity
-  string created_by = 4;
-
-  // Time in epoch milliseconds that the entity was updated
-  int64 updated_at = 5;
-
-  // Who updated the entity
-  string updated_by = 6;
-
-  // Content Length
-  int64 size = 7;
-
-  // MD5 digest of the body
-  string ETag = 8;
-
-  // optional "save" or "commit" message
-  //
-  // NOTE: currently managed by the dashboard_version table, and will be returned from a "history" command
-  string comment = 9;
 }
 
 //-----------------------------------------------
@@ -241,7 +213,7 @@ message WriteEntityResponse {
   string GUID = 3;
 
   // Entity details with the body removed
-  EntityVersionInfo entity = 4;
+  Entity entity = 4;
 
   // k8s body
   bytes body = 5;
@@ -306,7 +278,7 @@ message EntityHistoryResponse {
   grn.GRN GRN = 1;
 
   // Entity metadata without the raw bytes
-  repeated EntityVersionInfo versions = 2;
+  repeated Entity versions = 2;
 
   // More results exist... pass this in the next request
   string next_page_token = 3;

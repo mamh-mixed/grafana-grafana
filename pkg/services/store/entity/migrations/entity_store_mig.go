@@ -15,15 +15,16 @@ func initEntityTables(mg *migrator.Migrator) string {
 		Name: "entity",
 		Columns: []*migrator.Column{
 			// primary identifier
-			{Name: "guid", Type: migrator.DB_Uuid, Nullable: false, IsPrimaryKey: true}, // required... should be primary key? with unique key on tenant+kind+uid?
+			{Name: "guid", Type: migrator.DB_Uuid, Nullable: false, IsPrimaryKey: true},
+			{Name: "version", Type: migrator.DB_NVarchar, Length: 128, Nullable: false},
 
 			// The entity identifier
 			{Name: "tenant_id", Type: migrator.DB_BigInt, Nullable: false},
 			{Name: "kind", Type: migrator.DB_NVarchar, Length: 190, Nullable: false},
 			{Name: "uid", Type: migrator.DB_NVarchar, Length: 190, Nullable: false},
 
-			{Name: "folder", Type: migrator.DB_Uuid, Nullable: false},
-			{Name: "access", Type: migrator.DB_Text, Nullable: true}, // JSON object
+			{Name: "folder", Type: migrator.DB_NVarchar, Length: 190, Nullable: false}, // uid of folder
+			{Name: "access", Type: migrator.DB_Text, Nullable: true},                   // JSON object
 
 			// The raw entity body (any byte array)
 			{Name: "meta", Type: migrator.DB_Text, Nullable: true},     // raw meta object from k8s (with standard stuff removed)
@@ -32,9 +33,8 @@ func initEntityTables(mg *migrator.Migrator) string {
 
 			{Name: "size", Type: migrator.DB_BigInt, Nullable: false},
 			{Name: "etag", Type: migrator.DB_NVarchar, Length: 32, Nullable: false, IsLatin: true}, // md5(body)
-			{Name: "version", Type: migrator.DB_NVarchar, Length: 128, Nullable: false},
 
-			// Who changed what when -- We should avoid JOINs with other tables in the database
+			// Who changed what when
 			{Name: "created_at", Type: migrator.DB_BigInt, Nullable: false},
 			{Name: "created_by", Type: migrator.DB_NVarchar, Length: 190, Nullable: false},
 			{Name: "updated_at", Type: migrator.DB_BigInt, Nullable: false},
@@ -45,11 +45,12 @@ func initEntityTables(mg *migrator.Migrator) string {
 			{Name: "origin_key", Type: migrator.DB_Text, Nullable: false},
 			{Name: "origin_ts", Type: migrator.DB_BigInt, Nullable: false},
 
-			// Summary data (always extracted from the `body` column)
+			// Metadata
 			{Name: "name", Type: migrator.DB_NVarchar, Length: 190, Nullable: false},
 			{Name: "slug", Type: migrator.DB_NVarchar, Length: 190, Nullable: false}, // from title
 			{Name: "description", Type: migrator.DB_Text, Nullable: true},
 
+			// Commit message
 			{Name: "message", Type: migrator.DB_Text, Nullable: false}, // defaults to empty string
 			{Name: "labels", Type: migrator.DB_Text, Nullable: true},   // JSON object
 			{Name: "fields", Type: migrator.DB_Text, Nullable: true},   // JSON object
@@ -65,16 +66,18 @@ func initEntityTables(mg *migrator.Migrator) string {
 	tables = append(tables, migrator.Table{
 		Name: "entity_history",
 		Columns: []*migrator.Column{
+			// only difference from entity table is that we store multiple versions of the same entity
+			// so we have a unique index on guid+version instead of guid as primary key
 			{Name: "guid", Type: migrator.DB_Uuid, Nullable: false},
+			{Name: "version", Type: migrator.DB_NVarchar, Length: 128, Nullable: false},
 
 			// The entity identifier
 			{Name: "tenant_id", Type: migrator.DB_BigInt, Nullable: false},
 			{Name: "kind", Type: migrator.DB_NVarchar, Length: 190, Nullable: false},
 			{Name: "uid", Type: migrator.DB_NVarchar, Length: 190, Nullable: false},
 
-			// Raw bytes
-			{Name: "folder", Type: migrator.DB_Uuid, Nullable: false},
-			{Name: "access", Type: migrator.DB_Text, Nullable: true}, // JSON object
+			{Name: "folder", Type: migrator.DB_NVarchar, Length: 190, Nullable: false}, // uid of folder
+			{Name: "access", Type: migrator.DB_Text, Nullable: true},                   // JSON object
 
 			// The raw entity body (any byte array)
 			{Name: "meta", Type: migrator.DB_Text, Nullable: true},     // raw meta object from k8s (with standard stuff removed)
@@ -83,18 +86,19 @@ func initEntityTables(mg *migrator.Migrator) string {
 
 			{Name: "size", Type: migrator.DB_BigInt, Nullable: false},
 			{Name: "etag", Type: migrator.DB_NVarchar, Length: 32, Nullable: false, IsLatin: true}, // md5(body)
-			{Name: "version", Type: migrator.DB_NVarchar, Length: 128, Nullable: false},
 
 			// Who changed what when
 			{Name: "created_at", Type: migrator.DB_BigInt, Nullable: false},
 			{Name: "created_by", Type: migrator.DB_NVarchar, Length: 190, Nullable: false},
+			{Name: "updated_at", Type: migrator.DB_BigInt, Nullable: false},
+			{Name: "updated_by", Type: migrator.DB_NVarchar, Length: 190, Nullable: false},
 
 			// Mark objects with origin metadata
 			{Name: "origin", Type: migrator.DB_NVarchar, Length: 40, Nullable: false},
 			{Name: "origin_key", Type: migrator.DB_Text, Nullable: false},
 			{Name: "origin_ts", Type: migrator.DB_BigInt, Nullable: false},
 
-			// Summary data (always extracted from the `body` column)
+			// Metadata
 			{Name: "name", Type: migrator.DB_NVarchar, Length: 190, Nullable: false},
 			{Name: "slug", Type: migrator.DB_NVarchar, Length: 190, Nullable: false}, // from title
 			{Name: "description", Type: migrator.DB_Text, Nullable: true},
@@ -104,7 +108,6 @@ func initEntityTables(mg *migrator.Migrator) string {
 			{Name: "labels", Type: migrator.DB_Text, Nullable: true},   // JSON object
 			{Name: "fields", Type: migrator.DB_Text, Nullable: true},   // JSON object
 			{Name: "errors", Type: migrator.DB_Text, Nullable: true},   // JSON object
-
 		},
 		Indices: []*migrator.Index{
 			{Cols: []string{"guid", "version"}, Type: migrator.UniqueIndex},

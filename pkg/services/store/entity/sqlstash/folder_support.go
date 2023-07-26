@@ -11,19 +11,19 @@ import (
 type folderInfo struct {
 	Guid string `json:"guid"`
 
-	UID  string `json:"uid"`
-	Name string `json:"name"` // original display name
-	Slug string `json:"slug"` // full slug
+	UID      string `json:"uid"`
+	Name     string `json:"name"` // original display name
+	SlugPath string `json:"slug"` // full slug path
 
 	// original slug
-	originalSlug string
+	Slug string `json:"-"`
 
 	depth int32
 	left  int32
 	right int32
 
 	// Build the tree
-	parentGuid string
+	parentUID string
 
 	// Calculated after query
 	parent   *folderInfo
@@ -57,7 +57,7 @@ func updateFolderTree(ctx context.Context, tx *session.SessionTx, tenantId int64
 		folder := folderInfo{
 			children: []*folderInfo{},
 		}
-		err = rows.Scan(&folder.Guid, &folder.UID, &folder.parentGuid, &folder.Name, &folder.originalSlug)
+		err = rows.Scan(&folder.Guid, &folder.UID, &folder.parentUID, &folder.Name, &folder.Slug)
 		if err != nil {
 			return err
 		}
@@ -100,7 +100,7 @@ func buildFolderTree(all []*folderInfo) (*folderInfo, []*folderInfo, error) {
 
 	// already sorted by slug
 	for _, folder := range all {
-		parent, ok := lookup[folder.parentGuid]
+		parent, ok := lookup[folder.parentUID]
 		if ok {
 			folder.parent = parent
 			parent.children = append(parent.children, folder)
@@ -121,9 +121,9 @@ func setMPTTOrder(folder *folderInfo, stack []*folderInfo, idx int32) (int32, er
 	folder.stack = stack
 
 	if folder.depth > 0 {
-		folder.Slug = "/"
+		folder.SlugPath = "/"
 		for _, f := range stack {
-			folder.Slug += f.originalSlug + "/"
+			folder.SlugPath += f.Slug + "/"
 		}
 	}
 
@@ -146,7 +146,7 @@ func insertFolderInfo(ctx context.Context, tx *session.SessionTx, tenantId int64
 		folder.Guid,
 		tenantId,
 		folder.UID,
-		folder.Slug,
+		folder.SlugPath,
 		string(js),
 		folder.depth,
 		folder.left,

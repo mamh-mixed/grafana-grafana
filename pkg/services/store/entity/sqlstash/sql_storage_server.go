@@ -85,9 +85,7 @@ func (s *sqlEntityServer) getReadSelect(r *entity.ReadEntityRequest) string {
 	for i, f := range fields {
 		quotedFields[i] = s.dialect.Quote(f)
 	}
-	return "SELECT " + strings.Join(quotedFields, ",") +
-		" FROM entity" +
-		" WHERE "
+	return "SELECT " + strings.Join(quotedFields, ",")
 }
 
 func (s *sqlEntityServer) rowToReadEntityResponse(ctx context.Context, rows *sql.Rows, r *entity.ReadEntityRequest) (*entity.Entity, error) {
@@ -169,18 +167,35 @@ func (s *sqlEntityServer) validateGRN(ctx context.Context, grn *grn.GRN) (*grn.G
 }
 
 func (s *sqlEntityServer) Read(ctx context.Context, r *entity.ReadEntityRequest) (*entity.Entity, error) {
-	if r.Version != "" {
-		return s.readFromHistory(ctx, r)
-	}
+	return s.read(ctx, s.sess, r)
+}
+
+func (s *sqlEntityServer) read(ctx context.Context, tx session.SessionQuerier, r *entity.ReadEntityRequest) (*entity.Entity, error) {
 	grn, err := s.validateGRN(ctx, r.GRN)
 	if err != nil {
 		return nil, err
 	}
 
+	table := "entity"
 	where := " (tenant_id=? AND kind=? AND uid=?)"
 	args := []interface{}{grn.TenantID, grn.ResourceKind, grn.ResourceIdentifier}
 
-	rows, err := s.sess.Query(ctx, s.getReadSelect(r)+where, args...)
+	if r.Version != "" {
+		table = "entity_history"
+		where += " AND version=?"
+		args = append(args, r.Version)
+	}
+
+	query := s.getReadSelect(r)
+
+	if false { // TODO, MYSQL/PosgreSQL can lock the row " FOR UPDATE"
+		query += " FOR UPDATE"
+	}
+
+	query += " FROM " + table +
+		" WHERE " + where
+
+	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -191,67 +206,6 @@ func (s *sqlEntityServer) Read(ctx context.Context, r *entity.ReadEntityRequest)
 	}
 
 	return s.rowToReadEntityResponse(ctx, rows, r)
-}
-
-func (s *sqlEntityServer) readFromHistory(ctx context.Context, r *entity.ReadEntityRequest) (*entity.Entity, error) {
-	grn, err := s.validateGRN(ctx, r.GRN)
-	if err != nil {
-		return nil, err
-	}
-
-	fields := []string{
-		"guid", "body", "size", "etag", "version",
-		"created_at", "created_by", "updated_at", "updated_by",
-	}
-
-	query := "SELECT " + strings.Join(fields, ",") +
-		" FROM entity_history" +
-		" WHERE (tenant_id=? AND kind=? AND uid=? AND version=?)"
-	args := []interface{}{grn.TenantID, grn.ResourceKind, grn.ResourceIdentifier, r.Version}
-
-	rows, err := s.sess.Query(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	// Version or key not found
-	if !rows.Next() {
-		return &entity.Entity{}, nil
-	}
-
-	raw := &entity.Entity{
-		GRN: r.GRN,
-	}
-	err = rows.Scan(
-		&raw.Guid, &raw.Body, &raw.Size, &raw.ETag, &raw.Version,
-		&raw.CreatedAt, &raw.CreatedBy, &raw.UpdatedAt, &raw.UpdatedBy,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Dynamically create the summary
-	if r.WithSummary {
-		builder := s.kinds.GetSummaryBuilder(r.GRN.ResourceKind)
-		if builder != nil {
-			val, out, err := builder(ctx, r.GRN.ResourceIdentifier, raw.Body)
-			if err == nil {
-				raw.Body = out // cleaned up
-				raw.SummaryJson, err = json.Marshal(val)
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
-	}
-
-	// Clear the body if not requested
-	if !r.WithBody {
-		raw.Body = nil
-	}
-
-	return raw, err
 }
 
 func (s *sqlEntityServer) BatchRead(ctx context.Context, b *entity.BatchReadEntityRequest) (*entity.BatchReadEntityResponse, error) {
@@ -281,7 +235,9 @@ func (s *sqlEntityServer) BatchRead(ctx context.Context, b *entity.BatchReadEnti
 	}
 
 	req := b.Batch[0]
-	query := s.getReadSelect(req) + "(" + strings.Join(constraints, " OR ") + ")"
+	query := s.getReadSelect(req) +
+		" FROM entity" +
+		" WHERE (" + strings.Join(constraints, " OR ") + ")"
 	rows, err := s.sess.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -336,7 +292,6 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 		return nil, err
 	}
 
-	var access []byte //
 	etag := createContentsHash(body, r.Meta, r.Status)
 	rsp := &entity.WriteEntityResponse{
 		GRN:    grn,
@@ -348,90 +303,72 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 	}
 
 	err = s.sess.WithTransaction(ctx, func(tx *session.SessionTx) error {
-		isUpdate := false
-
-		versionInfo, err := s.selectForUpdate(ctx, tx, grn)
+		current, err := s.read(ctx, tx, &entity.ReadEntityRequest{
+			GRN: grn,
+			WithMeta: true,
+			WithBody: false,
+			WithStatus: true,
+			WithSummary: true,
+		})
 		if err != nil {
-			if err.Error() != "not found" {
-				s.log.Error("error getting current version", "msg", err.Error())
-				return err
-			}
-			versionInfo = &entity.EntityVersionInfo{}
-			rsp.Status = entity.WriteEntityResponse_CREATED
-		} else if r.ClearHistory {
-			// Optionally keep the original creation time information
-			if createdAt < 1000 || createdBy == "" {
-				createdAt = versionInfo.CreatedAt
-				createdBy = versionInfo.CreatedBy
-			}
-
-			_, err = doDelete(ctx, tx, &entity.Entity{Guid: versionInfo.Guid, GRN: grn})
-			if err != nil {
-				s.log.Error("error removing old version", "msg", err.Error())
-				return err
-			}
-			versionInfo = &entity.EntityVersionInfo{}
-		} else {
-			// Same entity
-			if versionInfo.ETag == etag {
-				rsp.Entity = versionInfo
-				rsp.Status = entity.WriteEntityResponse_UNCHANGED
-				return nil
-			}
-
-			isUpdate = true
-
-			rsp.GUID = versionInfo.Guid
-			rsp.Status = entity.WriteEntityResponse_UPDATED
-
-			// Clear the labels+refs
-			if _, err := tx.Exec(ctx, "DELETE FROM entity_labels WHERE guid=?", rsp.GUID); err != nil {
-				return err
-			}
-			if _, err := tx.Exec(ctx, "DELETE FROM entity_ref WHERE guid=?", rsp.GUID); err != nil {
-				return err
-			}
+			return err
 		}
 
 		// Optimistic locking
 		if r.PreviousVersion != "" {
-			if r.PreviousVersion != versionInfo.Version {
+			if r.PreviousVersion != current.Version {
 				return fmt.Errorf("optimistic lock failed")
 			}
 		}
 
+		isUpdate := false
+
+		// if we found an existing entity
+		if current.Guid != "" {
+			if r.ClearHistory {
+				// Optionally keep the original creation time information
+				if createdAt < 1000 || createdBy == "" {
+					createdAt = current.CreatedAt
+					createdBy = current.CreatedBy
+				}
+
+				_, err = doDelete(ctx, tx, &entity.Entity{Guid: current.Guid, GRN: grn})
+				if err != nil {
+					s.log.Error("error removing old version", "msg", err.Error())
+					return err
+				}
+
+				current = &entity.Entity{}
+			} else {
+				// Same entity
+				if current.ETag == etag {
+					rsp.Entity = current
+					rsp.Status = entity.WriteEntityResponse_UNCHANGED
+					return nil
+				}
+
+				isUpdate = true
+
+				rsp.GUID = current.Guid
+
+				// Clear the labels+refs
+				if _, err := tx.Exec(ctx, "DELETE FROM entity_labels WHERE guid=?", rsp.GUID); err != nil {
+					return err
+				}
+				if _, err := tx.Exec(ctx, "DELETE FROM entity_ref WHERE guid=?", rsp.GUID); err != nil {
+					return err
+				}
+			}
+		}
+
 		// Set the comment on this write
-		versionInfo.Comment = r.Comment
-		versionInfo.Version = ulid.Make().String()
+		current.Comment = r.Comment
+		current.Version = ulid.Make().String()
 
-		// 1. Add the `entity_history` values
-		versionInfo.Size = int64(len(body))
-		versionInfo.ETag = etag
-		versionInfo.UpdatedAt = updatedAt
-		versionInfo.UpdatedBy = updatedBy
-
-		query, args, err := s.dialect.InsertQuery("entity_history", map[string]interface{}{
-			"guid":       versionInfo.Guid,
-			"version":    versionInfo.Version,
-			"message":    versionInfo.Comment,
-			"size":       versionInfo.Size,
-			"body":       body,
-			"etag":       versionInfo.ETag,
-			"folder":     r.Folder,
-			"access":     access,
-			"updated_at": versionInfo.UpdatedAt,
-			"updated_by": versionInfo.UpdatedBy,
-		})
-		if err != nil {
-			s.log.Error("error building entity history insert", "msg", err.Error())
-			return err
-		}
-
-		_, err = tx.Exec(ctx, query, args...)
-		if err != nil {
-			s.log.Error("error writing entity history", "msg", err.Error())
-			return err
-		}
+		current.Size = int64(len(body))
+		current.ETag = etag
+		current.UpdatedAt = updatedAt
+		current.UpdatedBy = updatedBy
 
 		meta := &kinds.GrafanaResourceMetadata{}
 		if len(r.Meta) > 0 {
@@ -452,7 +389,7 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 			meta.Annotations = make(map[string]string)
 		}
 
-		meta.ResourceVersion = versionInfo.Version
+		meta.ResourceVersion = current.Version
 		meta.Namespace = util.OrgIdToNamespace(grn.TenantID)
 
 		meta.SetFolder(r.Folder)
@@ -498,77 +435,80 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 		}
 		rsp.GUID = string(meta.UID)
 
+		values := map[string]interface{}{
+			// below are only set at creation
+			"guid":       current.Guid,
+			"tenant_id":  grn.TenantID,
+			"kind":       grn.ResourceKind,
+			"uid":        grn.ResourceIdentifier,
+			"created_at": createdAt,
+			"created_by": createdBy,
+			// below are set during creation and update
+			"folder":      r.Folder,
+			"slug":        summary.model.Slug,
+			"updated_at":  updatedAt,
+			"updated_by":  updatedBy,
+			"body":        body,
+			"meta":        r.Meta,
+			"status":      r.Status,
+			"size":        current.Size,
+			"etag":        current.ETag,
+			"version":     current.Version,
+			"name":        summary.model.Name,
+			"description": summary.model.Description,
+			"labels":      summary.labels,
+			"fields":      summary.fields,
+			"errors":      summary.errors,
+			"origin":      origin.Source,
+			"origin_key":  origin.Key,
+			"origin_ts":   timestamp,
+		}
+
+		// 1. Add the `entity_history` values
+		query, args, err := s.dialect.InsertQuery("entity_history", values)
+		if err != nil {
+			s.log.Error("error building entity history insert", "msg", err.Error())
+			return err
+		}
+
+		_, err = tx.Exec(ctx, query, args...)
+		if err != nil {
+			s.log.Error("error writing entity history", "msg", err.Error())
+			return err
+		}
+
 		// 5. Add/update the main `entity` table
-		rsp.Entity = versionInfo
+		rsp.Entity = current
 		if isUpdate {
+			// remove values that are only set at insert
+			delete(values, "guid")
+			delete(values, "tenant_id")
+			delete(values, "kind")
+			delete(values, "uid")
+			delete(values, "created_at")
+			delete(values, "created_by")
+
 			query, args, err := s.dialect.UpdateQuery(
 				"entity",
+				values,
 				map[string]interface{}{
-					"folder":      r.Folder,
-					"slug":        summary.model.Slug,
-					"updated_at":  updatedAt,
-					"updated_by":  updatedBy,
-					"body":        body,
-					"meta":        r.Meta,
-					"status":      r.Status,
-					"size":        versionInfo.Size,
-					"etag":        versionInfo.ETag,
-					"version":     versionInfo.Version,
-					"name":        summary.model.Name,
-					"description": summary.model.Description,
-					"labels":      summary.labels,
-					"fields":      summary.fields,
-					"errors":      summary.errors,
-					"origin":      origin.Source,
-					"origin_key":  origin.Key,
-					"origin_ts":   timestamp,
-				},
-				map[string]interface{}{
-					"guid": versionInfo.Guid,
+					"guid": current.Guid,
 				},
 			)
 			if err != nil {
 				s.log.Error("error building entity update sql", "msg", err.Error())
 				return err
 			}
+
 			_, err = tx.Exec(ctx, query, args...)
 			if err != nil {
 				s.log.Error("error updating entity", "msg", err.Error())
 				return err
 			}
+
 			rsp.Status = entity.WriteEntityResponse_UPDATED
 		} else {
-			query, args, err := s.dialect.InsertQuery(
-				"entity",
-				map[string]interface{}{
-					// below are only set at creation
-					"guid":       versionInfo.Guid,
-					"tenant_id":  grn.TenantID,
-					"kind":       grn.ResourceKind,
-					"uid":        grn.ResourceIdentifier,
-					"created_at": createdAt,
-					"created_by": createdBy,
-					// below are the same as update
-					"folder":      r.Folder,
-					"slug":        summary.model.Slug,
-					"updated_at":  updatedAt,
-					"updated_by":  updatedBy,
-					"body":        body,
-					"meta":        r.Meta,
-					"status":      r.Status,
-					"size":        versionInfo.Size,
-					"etag":        versionInfo.ETag,
-					"version":     versionInfo.Version,
-					"name":        summary.model.Name,
-					"description": summary.model.Description,
-					"labels":      summary.labels,
-					"fields":      summary.fields,
-					"errors":      summary.errors,
-					"origin":      origin.Source,
-					"origin_key":  origin.Key,
-					"origin_ts":   timestamp,
-				},
-			)
+			query, args, err := s.dialect.InsertQuery("entity", values)
 			if err != nil {
 				s.log.Error("error building entity insert sql", "msg", err.Error())
 				return err
@@ -579,6 +519,7 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 				s.log.Error("error inserting entity", "msg", err.Error())
 				return err
 			}
+
 			rsp.Status = entity.WriteEntityResponse_CREATED
 		}
 
@@ -607,41 +548,6 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 	rsp.SummaryJson = summary.marshaled
 
 	return rsp, err
-}
-
-func (s *sqlEntityServer) selectForUpdate(ctx context.Context, tx *session.SessionTx, grn *grn.GRN) (*entity.EntityVersionInfo, error) {
-	q := "SELECT guid,etag,version," +
-		"created_at,created_by,updated_at,updated_by," +
-		"size" +
-		" FROM entity" +
-		" WHERE (tenant_id=? AND kind=? AND uid=?)"
-	if false { // TODO, MYSQL/PosgreSQL can lock the row " FOR UPDATE"
-		q += " FOR UPDATE"
-	}
-	args := []interface{}{grn.TenantID, grn.ResourceKind, grn.ResourceIdentifier}
-
-	rows, err := tx.Query(ctx, q, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = rows.Close() }()
-
-	current := &entity.EntityVersionInfo{}
-	if rows.Next() {
-		err = rows.Scan(
-			&current.Guid, &current.ETag, &current.Version,
-			&current.CreatedAt, &current.CreatedBy, &current.UpdatedAt, &current.UpdatedBy,
-			&current.Size,
-		)
-	} else {
-		err = fmt.Errorf("not found")
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return current, nil
 }
 
 func (s *sqlEntityServer) writeSearchInfo(
@@ -843,8 +749,17 @@ func (s *sqlEntityServer) History(ctx context.Context, r *entity.EntityHistoryRe
 		return nil, fmt.Errorf("next page not supported yet")
 	}
 
-	query := "SELECT version,size,etag,updated_at,updated_by,message" +
-		" FROM entity_history" +
+	rr := &entity.ReadEntityRequest{
+		GRN:         r.GRN,
+		WithMeta:    true,
+		WithBody:    false,
+		WithStatus:  true,
+		WithSummary: true,
+	}
+
+	query := s.getReadSelect(rr)
+
+	query += " FROM entity_history" +
 		" WHERE (tenant_id=? AND kind=? AND uid=?)" +
 		page +
 		" ORDER BY updated_at DESC" +
@@ -859,8 +774,7 @@ func (s *sqlEntityServer) History(ctx context.Context, r *entity.EntityHistoryRe
 		GRN: r.GRN,
 	}
 	for rows.Next() {
-		v := &entity.EntityVersionInfo{}
-		err := rows.Scan(&v.Version, &v.Size, &v.ETag, &v.UpdatedAt, &v.UpdatedBy, &v.Comment)
+		v, err := s.rowToReadEntityResponse(ctx, rows, rr)
 		if err != nil {
 			return nil, err
 		}

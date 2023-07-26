@@ -96,7 +96,7 @@ func requireEntityMatch(t *testing.T, obj *entity.Entity, m rawEntityMatcher) {
 	require.True(t, len(mismatches) == 0, mismatches)
 }
 
-func requireVersionMatch(t *testing.T, obj *entity.EntityVersionInfo, m objectVersionMatcher) {
+func requireVersionMatch(t *testing.T, obj *entity.Entity, m objectVersionMatcher) {
 	t.Helper()
 	mismatches := ""
 
@@ -297,7 +297,7 @@ func TestIntegrationEntityServer(t *testing.T) {
 			GRN: testGrn,
 		})
 		require.NoError(t, err)
-		require.Equal(t, []*entity.EntityVersionInfo{
+		require.Equal(t, []*entity.Entity{
 			writeResp3.Entity,
 			writeResp2.Entity,
 			writeResp1.Entity,
