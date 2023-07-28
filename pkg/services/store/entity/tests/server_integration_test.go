@@ -175,7 +175,7 @@ func TestIntegrationEntityServer(t *testing.T) {
 			WithBody: true,
 		})
 		require.NoError(t, err)
-		require.Nil(t, readResp.SummaryJson)
+		require.Nil(t, readResp.Summary)
 		require.NotNil(t, readResp)
 
 		foundGRN := readResp.GRN
@@ -271,7 +271,7 @@ func TestIntegrationEntityServer(t *testing.T) {
 			WithBody: true,
 		})
 		require.NoError(t, err)
-		require.Nil(t, readRespLatest.SummaryJson)
+		require.Nil(t, readRespLatest.Summary)
 		requireEntityMatch(t, readRespLatest, latestMatcher)
 
 		readRespFirstVer, err := testCtx.client.Read(ctx, &entity.ReadEntityRequest{
@@ -281,7 +281,7 @@ func TestIntegrationEntityServer(t *testing.T) {
 		})
 
 		require.NoError(t, err)
-		require.Nil(t, readRespFirstVer.SummaryJson)
+		require.Nil(t, readRespFirstVer.Summary)
 		require.NotNil(t, readRespFirstVer)
 		requireEntityMatch(t, readRespFirstVer, rawEntityMatcher{
 			grn:          testGrn,

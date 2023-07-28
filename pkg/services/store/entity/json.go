@@ -103,10 +103,10 @@ func (codec *rawEntityCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream)
 			stream.WriteString(sEnc) // works for strings
 		}
 	}
-	if len(obj.SummaryJson) > 0 {
+	if obj.Summary != nil {
 		stream.WriteMore()
 		stream.WriteObjectField("summary")
-		writeRawJson(stream, obj.SummaryJson)
+		stream.WriteVal(obj.Summary)
 	}
 	if obj.ETag != "" {
 		stream.WriteMore()
@@ -161,14 +161,8 @@ func readEntity(iter *jsoniter.Iterator, raw *Entity) {
 			iter.ReadVal(raw.Origin)
 
 		case "summary":
-			var val interface{}
-			iter.ReadVal(&val) // ??? is there a smarter way to just keep the underlying bytes without read+marshal
-			body, err := json.Marshal(val)
-			if err != nil {
-				iter.ReportError("raw entity", "error reading summary body")
-				return
-			}
-			raw.SummaryJson = body
+			raw.Summary = &EntitySummary{}
+			iter.ReadVal(raw.Summary)
 
 		case "body":
 			var val interface{}

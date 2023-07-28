@@ -128,11 +128,7 @@ func (s *sqlEntityServer) rowToReadEntityResponse(ctx context.Context, rows *sql
 			return nil, err
 		}
 
-		js, err := json.Marshal(summary)
-		if err != nil {
-			return nil, err
-		}
-		raw.SummaryJson = js
+		raw.Summary = summary
 	}
 	return raw, nil
 }
@@ -304,10 +300,10 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 
 	err = s.sess.WithTransaction(ctx, func(tx *session.SessionTx) error {
 		current, err := s.read(ctx, tx, &entity.ReadEntityRequest{
-			GRN: grn,
-			WithMeta: true,
-			WithBody: false,
-			WithStatus: true,
+			GRN:         grn,
+			WithMeta:    true,
+			WithBody:    false,
+			WithStatus:  true,
 			WithSummary: true,
 		})
 		if err != nil {
@@ -741,43 +737,56 @@ func (s *sqlEntityServer) History(ctx context.Context, r *entity.EntityHistoryRe
 		return nil, err
 	}
 
-	page := ""
-	args := []interface{}{grn2.TenantID, grn2.ResourceKind, grn2.ResourceIdentifier}
-	if r.NextPageToken != "" {
-		// args = append(args, r.NextPageToken) // TODO, need to get time from the version
-		// page = " AND updated <= ?"
-		return nil, fmt.Errorf("next page not supported yet")
+	var limit int64 = 100
+	if r.Limit > 0 && r.Limit < 100 {
+		limit = r.Limit
 	}
 
 	rr := &entity.ReadEntityRequest{
-		GRN:         r.GRN,
+		GRN:         grn2,
 		WithMeta:    true,
 		WithBody:    false,
 		WithStatus:  true,
 		WithSummary: true,
 	}
 
-	query := s.getReadSelect(rr)
+	query := s.getReadSelect(rr) +
+		" FROM entity_history" +
+		" WHERE (tenant_id=? AND kind=? AND uid=?)"
+	args := []interface{}{
+		grn2.TenantID, grn2.ResourceKind, grn2.ResourceIdentifier,
+	}
 
-	query += " FROM entity_history" +
-		" WHERE (tenant_id=? AND kind=? AND uid=?)" +
-		page +
-		" ORDER BY updated_at DESC" +
-		" LIMIT 100"
+	if r.NextPageToken != "" {
+		query += " AND version <= ?"
+		args = append(args, r.NextPageToken)
+	}
+
+	query += " ORDER BY version DESC" +
+		// select 1 more than we need to see if there is a next page
+		" LIMIT " + fmt.Sprint(limit+1)
 
 	rows, err := s.sess.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = rows.Close() }()
+
 	rsp := &entity.EntityHistoryResponse{
-		GRN: r.GRN,
+		GRN: grn2,
 	}
 	for rows.Next() {
 		v, err := s.rowToReadEntityResponse(ctx, rows, rr)
 		if err != nil {
 			return nil, err
 		}
+
+		// found more than requested
+		if int64(len(rsp.Versions)) >= limit {
+			rsp.NextPageToken = v.Version
+			break
+		}
+
 		rsp.Versions = append(rsp.Versions, v)
 	}
 	return rsp, err
