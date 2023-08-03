@@ -37,6 +37,15 @@ export const ConfigEditor = (props: Props) => {
     invalid: false,
   });
   useEffect(() => setLogGroupFieldState({ invalid: false }), [props.options]);
+  const [externalId, setExternalId] = useState('');
+  useEffect(() => {
+    if (!externalId && datasource) {
+      datasource.resources
+        .getExternalId()
+        .then(setExternalId)
+        .catch(() => setExternalId('Unable to fetch externalId'));
+    }
+  }, [datasource, externalId]);
 
   return (
     <>
@@ -56,6 +65,7 @@ export const ConfigEditor = (props: Props) => {
               );
           })
         }
+        externalId={externalId}
       >
         <InlineField label="Namespaces of Custom Metrics" labelWidth={29} tooltip="Namespaces of Custom Metrics.">
           <Input
