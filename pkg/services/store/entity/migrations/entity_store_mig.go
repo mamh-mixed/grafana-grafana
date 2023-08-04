@@ -24,7 +24,6 @@ func initEntityTables(mg *migrator.Migrator) string {
 			{Name: "uid", Type: migrator.DB_NVarchar, Length: 190, Nullable: false},
 
 			{Name: "folder", Type: migrator.DB_NVarchar, Length: 190, Nullable: false}, // uid of folder
-			{Name: "access", Type: migrator.DB_Text, Nullable: true},                   // JSON object
 
 			// The raw entity body (any byte array)
 			{Name: "meta", Type: migrator.DB_Text, Nullable: true},     // raw meta object from k8s (with standard stuff removed)

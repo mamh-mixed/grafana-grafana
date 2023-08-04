@@ -175,10 +175,12 @@ func (s *httpEntityStore) doWriteEntity(c *contextmodel.ReqContext) response.Res
 	}
 
 	rsp, err := s.store.Write(c.Req.Context(), &entity.WriteEntityRequest{
-		GRN:             grn,
-		Body:            b,
-		Folder:          params["folder"],
-		Comment:         params["comment"],
+		Entity: &entity.Entity{
+			GRN:     grn,
+			Body:    b,
+			Folder:  params["folder"],
+			Message: params["comment"],
+		},
 		PreviousVersion: params["previousVersion"],
 	})
 	if err != nil {
@@ -285,10 +287,12 @@ func (s *httpEntityStore) doUpload(c *contextmodel.ReqContext) response.Response
 			}
 
 			result, err := s.store.Write(ctx, &entity.WriteEntityRequest{
-				GRN:     grn,
-				Body:    data,
-				Comment: message,
-				Folder:  folder,
+				Entity: &entity.Entity{
+					GRN:     grn,
+					Body:    data,
+					Message: message,
+					Folder:  folder,
+				},
 				//	PreviousVersion: params["previousVersion"],
 			})
 

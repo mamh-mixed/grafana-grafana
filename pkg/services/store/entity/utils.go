@@ -3,12 +3,14 @@ package entity
 // The admin request is a superset of write request features
 func ToAdminWriteEntityRequest(req *WriteEntityRequest) *AdminWriteEntityRequest {
 	return &AdminWriteEntityRequest{
-		GRN:             req.GRN,
-		Meta:            req.Meta,
-		Body:            req.Body,
-		Status:          req.Status,
-		Folder:          req.Folder,
-		Comment:         req.Comment,
+		Entity: &Entity{
+			GRN:     req.Entity.GRN,
+			Meta:    req.Entity.Meta,
+			Body:    req.Entity.Body,
+			Status:  req.Entity.Status,
+			Folder:  req.Entity.Folder,
+			Message: req.Entity.Message,
+		},
 		PreviousVersion: req.PreviousVersion,
 	}
 }

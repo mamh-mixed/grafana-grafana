@@ -8,12 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/grafana/grafana/pkg/infra/appcontext"
 	"github.com/grafana/grafana/pkg/infra/grn"
 	"github.com/grafana/grafana/pkg/infra/log"
-	"github.com/grafana/grafana/pkg/infra/slugify"
-	"github.com/grafana/grafana/pkg/kinds"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/grpcserver"
 	"github.com/grafana/grafana/pkg/services/sqlstore/migrator"
@@ -25,10 +22,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/store/kind"
 	"github.com/grafana/grafana/pkg/services/store/resolver"
 	"github.com/grafana/grafana/pkg/setting"
-	"github.com/grafana/grafana/pkg/util"
 	"github.com/oklog/ulid/v2"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 // Make sure we implement both store + admin
@@ -94,11 +88,10 @@ func (s *sqlEntityServer) rowToReadEntityResponse(ctx context.Context, rows *sql
 		Origin: &entity.EntityOriginInfo{},
 	}
 
-	summaryjson := &summarySupport{}
 	args := []any{
 		&raw.Guid,
 		&raw.GRN.TenantID, &raw.GRN.ResourceKind, &raw.GRN.ResourceIdentifier, &raw.Folder,
-		&raw.Version, &raw.Size, &raw.ETag, &summaryjson.errors,
+		&raw.Version, &raw.Size, &raw.ETag, &raw.Errors,
 		&raw.CreatedAt, &raw.CreatedBy,
 		&raw.UpdatedAt, &raw.UpdatedBy,
 		&raw.Origin.Source, &raw.Origin.Key, &raw.Origin.Time,
@@ -110,7 +103,7 @@ func (s *sqlEntityServer) rowToReadEntityResponse(ctx context.Context, rows *sql
 		args = append(args, &raw.Meta)
 	}
 	if r.WithSummary {
-		args = append(args, &summaryjson.name, &summaryjson.slug, &summaryjson.description, &summaryjson.labels, &summaryjson.fields)
+		args = append(args, &raw.Name, &raw.Slug, &raw.Description, &raw.Labels, &raw.Fields)
 	}
 
 	err := rows.Scan(args...)
@@ -122,14 +115,6 @@ func (s *sqlEntityServer) rowToReadEntityResponse(ctx context.Context, rows *sql
 		raw.Origin = nil
 	}
 
-	if r.WithSummary || summaryjson.errors != nil {
-		summary, err := summaryjson.toEntitySummary()
-		if err != nil {
-			return nil, err
-		}
-
-		raw.Summary = summary
-	}
 	return raw, nil
 }
 
@@ -258,17 +243,17 @@ func (s *sqlEntityServer) Write(ctx context.Context, r *entity.WriteEntityReques
 
 //nolint:gocyclo
 func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEntityRequest) (*entity.WriteEntityResponse, error) {
-	grn, err := s.validateGRN(ctx, r.GRN)
+	grn, err := s.validateGRN(ctx, r.Entity.GRN)
 	if err != nil {
 		s.log.Error("error validating GRN", "msg", err.Error())
 		return nil, err
 	}
 
 	timestamp := time.Now().UnixMilli()
-	createdAt := r.CreatedAt
-	createdBy := r.CreatedBy
-	updatedAt := r.UpdatedAt
-	updatedBy := r.UpdatedBy
+	createdAt := r.Entity.CreatedAt
+	createdBy := r.Entity.CreatedBy
+	updatedAt := r.Entity.UpdatedAt
+	updatedBy := r.Entity.UpdatedBy
 	if updatedBy == "" {
 		modifier, err := appcontext.User(ctx)
 		if err != nil {
@@ -283,17 +268,10 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 		updatedAt = timestamp
 	}
 
-	summary, body, err := s.prepare(ctx, r)
-	if err != nil {
-		return nil, err
-	}
-
-	etag := createContentsHash(body, r.Meta, r.Status)
 	rsp := &entity.WriteEntityResponse{
-		GRN:    grn,
 		Status: entity.WriteEntityResponse_CREATED, // Will be changed if not true
 	}
-	origin := r.Origin
+	origin := r.Entity.Origin
 	if origin == nil {
 		origin = &entity.EntityOriginInfo{}
 	}
@@ -336,100 +314,105 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 
 				current = &entity.Entity{}
 			} else {
-				// Same entity
-				if current.ETag == etag {
-					rsp.Entity = current
-					rsp.Status = entity.WriteEntityResponse_UNCHANGED
-					return nil
-				}
-
 				isUpdate = true
 
-				rsp.GUID = current.Guid
+				rsp.Entity.Guid = current.Guid
 
 				// Clear the labels+refs
-				if _, err := tx.Exec(ctx, "DELETE FROM entity_labels WHERE guid=?", rsp.GUID); err != nil {
+				if _, err := tx.Exec(ctx, "DELETE FROM entity_labels WHERE guid=?", rsp.Entity.Guid); err != nil {
 					return err
 				}
-				if _, err := tx.Exec(ctx, "DELETE FROM entity_ref WHERE guid=?", rsp.GUID); err != nil {
+				if _, err := tx.Exec(ctx, "DELETE FROM entity_ref WHERE guid=?", rsp.Entity.Guid); err != nil {
 					return err
 				}
 			}
 		}
 
 		// Set the comment on this write
-		current.Comment = r.Comment
+		current.Message = r.Entity.Message
 		current.Version = ulid.Make().String()
 
-		current.Size = int64(len(body))
+		if r.Entity.Body != nil {
+			current.Body = r.Entity.Body
+			current.Size = int64(len(current.Body))
+		}
+
+		if r.Entity.Meta != nil {
+			current.Meta = r.Entity.Meta
+		}
+
+		if r.Entity.Status != nil {
+			current.Status = r.Entity.Status
+		}
+
+		etag := createContentsHash(current.Body, current.Meta, current.Status)
 		current.ETag = etag
 		current.UpdatedAt = updatedAt
 		current.UpdatedBy = updatedBy
 
-		meta := &kinds.GrafanaResourceMetadata{}
-		if len(r.Meta) > 0 {
-			err = json.Unmarshal(r.Meta, meta)
+		/*
+			meta := &kinds.GrafanaResourceMetadata{}
+			if len(r.Entity.Meta) > 0 {
+				err = json.Unmarshal(r.Entity.Meta, meta)
+				if err != nil {
+					return err
+				}
+			}
+			meta.Name = grn.UID
+			if meta.Namespace == "" {
+				meta.Namespace = "default" // USE tenant id
+			}
+
+			if meta.UID == "" {
+				meta.UID = types.UID(uuid.New().String())
+			}
+			if meta.Annotations == nil {
+				meta.Annotations = make(map[string]string)
+			}
+
+			meta.ResourceVersion = current.Version
+			meta.Namespace = util.OrgIdToNamespace(grn.TenantId)
+
+			meta.SetFolder(r.Entity.Folder)
+
+			if !isUpdate {
+				if createdAt < 1000 {
+					createdAt = updatedAt
+				}
+				if createdBy == "" {
+					createdBy = updatedBy
+				}
+			}
+			if createdAt > 0 {
+				meta.CreationTimestamp = v1.NewTime(time.UnixMilli(createdAt))
+			}
+			if updatedAt > 0 {
+				meta.SetUpdatedTimestamp(util.Pointer(time.UnixMilli(updatedAt)))
+			}
+
+			if origin != nil {
+				var ts *time.Time
+				if origin.Time > 0 {
+					ts = util.Pointer(time.UnixMilli(origin.Time))
+				}
+				meta.SetOriginInfo(&kinds.ResourceOriginInfo{
+					Name:      origin.Source,
+					Key:       origin.Key,
+					Timestamp: ts,
+				})
+			}
+
+			if len(meta.Labels) > 0 {
+				for k, v := range meta.Labels {
+					current.Labels[k] = v
+				}
+			}
+			current.Meta, err = json.Marshal(meta)
 			if err != nil {
 				return err
 			}
-		}
-		meta.Name = grn.ResourceIdentifier
-		if meta.Namespace == "" {
-			meta.Namespace = "default" // USE tenant id
-		}
-
-		if meta.UID == "" {
-			meta.UID = types.UID(uuid.New().String())
-		}
-		if meta.Annotations == nil {
-			meta.Annotations = make(map[string]string)
-		}
-
-		meta.ResourceVersion = current.Version
-		meta.Namespace = util.OrgIdToNamespace(grn.TenantID)
-
-		meta.SetFolder(r.Folder)
-
-		if !isUpdate {
-			if createdAt < 1000 {
-				createdAt = updatedAt
-			}
-			if createdBy == "" {
-				createdBy = updatedBy
-			}
-		}
-		if createdAt > 0 {
-			meta.CreationTimestamp = v1.NewTime(time.UnixMilli(createdAt))
-		}
-		if updatedAt > 0 {
-			meta.SetUpdatedTimestamp(util.Pointer(time.UnixMilli(updatedAt)))
-		}
-
-		if origin != nil {
-			var ts *time.Time
-			if origin.Time > 0 {
-				ts = util.Pointer(time.UnixMilli(origin.Time))
-			}
-			meta.SetOriginInfo(&kinds.ResourceOriginInfo{
-				Name:      origin.Source,
-				Key:       origin.Key,
-				Timestamp: ts,
-			})
-		}
-
-		if len(meta.Labels) > 0 {
-			if summary.model.Labels == nil {
-				summary.model.Labels = make(map[string]string)
-			}
-			for k, v := range meta.Labels {
-				summary.model.Labels[k] = v
-			}
-		}
-		r.Meta, err = json.Marshal(meta)
-		if err != nil {
-			return err
-		}
-		rsp.GUID = string(meta.UID)
+		*/
+		// rsp.Entity.Guid = string(meta.UID)
 
 		values := map[string]interface{}{
 			// below are only set at creation
@@ -440,24 +423,24 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 			"created_at": createdAt,
 			"created_by": createdBy,
 			// below are set during creation and update
-			"folder":      r.Folder,
-			"slug":        summary.model.Slug,
+			"folder":      current.Folder,
+			"slug":        current.Slug,
 			"updated_at":  updatedAt,
 			"updated_by":  updatedBy,
-			"body":        body,
-			"meta":        r.Meta,
-			"status":      r.Status,
+			"body":        current.Body,
+			"meta":        current.Meta,
+			"status":      current.Status,
 			"size":        current.Size,
 			"etag":        current.ETag,
 			"version":     current.Version,
-			"name":        summary.model.Name,
-			"description": summary.model.Description,
-			"labels":      summary.labels,
-			"fields":      summary.fields,
-			"errors":      summary.errors,
+			"name":        current.Name,
+			"description": current.Description,
+			"labels":      current.Labels,
+			"fields":      current.Fields,
+			"errors":      current.Errors,
 			"origin":      origin.Source,
 			"origin_key":  origin.Key,
-			"origin_ts":   timestamp,
+			"origin_ts":   origin.Time,
 		}
 
 		// 1. Add the `entity_history` values
@@ -519,29 +502,23 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 			rsp.Status = entity.WriteEntityResponse_CREATED
 		}
 
-		switch r.GRN.ResourceKind {
+		switch current.GRN.ResourceKind {
 		case entity.StandardKindFolder:
-			err = updateFolderTree(ctx, tx, r.GRN.TenantID)
+			err = updateFolderTree(ctx, tx, r.Entity.GRN.TenantID)
 			if err != nil {
 				s.log.Error("error updating folder tree", "msg", err.Error())
 				return err
 			}
 		}
 
-		summary.folder = r.Folder
-		summary.parent_grn = grn
+		rsp.Entity = current
 
-		return s.writeSearchInfo(ctx, tx, grn.String(), summary)
+		return s.writeSearchInfo(ctx, tx, current)
 	})
 	if err != nil {
 		s.log.Error("error writing entity", "msg", err.Error())
 		rsp.Status = entity.WriteEntityResponse_ERROR
 	}
-
-	rsp.Body = body           // k8s
-	rsp.MetaJson = r.Meta     // k8s
-	rsp.StatusJson = r.Status // k8s
-	rsp.SummaryJson = summary.marshaled
 
 	return rsp, err
 }
@@ -549,20 +526,19 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 func (s *sqlEntityServer) writeSearchInfo(
 	ctx context.Context,
 	tx *session.SessionTx,
-	grn2 string,
-	summary *summarySupport,
+	current *entity.Entity,
 ) error {
-	parent_grn := summary.getParentGRN()
+	// parent_grn := current.getParentGRN()
 
 	// Add the labels rows
-	for k, v := range summary.model.Labels {
+	for k, v := range current.Labels {
 		query, args, err := s.dialect.InsertQuery(
 			"entity_labels",
 			map[string]interface{}{
-				"grn":        grn2,
-				"label":      k,
-				"value":      v,
-				"parent_grn": parent_grn,
+				"grn":   current.GRN.ToGRNString(),
+				"label": k,
+				"value": v,
+				// "parent_grn": parent_grn,
 			},
 		)
 		if err != nil {
@@ -576,67 +552,24 @@ func (s *sqlEntityServer) writeSearchInfo(
 	}
 
 	// Resolve references
-	for _, ref := range summary.model.References {
-		resolved, err := s.resolver.Resolve(ctx, ref)
-		if err != nil {
-			return err
-		}
-		query, args, err := s.dialect.InsertQuery(
-			"entity_ref",
-			map[string]interface{}{
-				"grn":              grn2,
-				"parent_grn":       parent_grn,
-				"family":           ref.Family,
-				"type":             ref.Type,
-				"id":               ref.Identifier,
-				"resolved_ok":      resolved.OK,
-				"resolved_to":      resolved.Key,
-				"resolved_warning": resolved.Warning,
-				"resolved_time":    resolved.Timestamp,
-			},
-		)
-		if err != nil {
-			return err
-		}
-
-		_, err = tx.Exec(ctx, query, args...)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Traverse entities and insert refs
-	if summary.model.Nested != nil {
-		for _, childModel := range summary.model.Nested {
-			grn2 = (&grn.GRN{
-				TenantID:           summary.parent_grn.TenantID,
-				ResourceKind:       childModel.Kind,
-				ResourceIdentifier: childModel.UID, // append???
-			}).ToGRNString()
-
-			child, err := newSummarySupport(childModel)
+	/*
+		for _, ref := range summary.model.References {
+			resolved, err := s.resolver.Resolve(ctx, ref)
 			if err != nil {
 				return err
 			}
-			child.isNested = true
-			child.folder = summary.folder
-			child.parent_grn = summary.parent_grn
-			parent_grn := child.getParentGRN()
-
 			query, args, err := s.dialect.InsertQuery(
-				"entity_nested",
+				"entity_ref",
 				map[string]interface{}{
-					"parent_grn":  parent_grn,
-					"grn":         grn2,
-					"tenant_id":   summary.parent_grn.TenantID,
-					"kind":        childModel.Kind,
-					"uid":         childModel.UID,
-					"folder":      summary.folder,
-					"name":        child.name,
-					"description": child.description,
-					"labels":      child.labels,
-					"fields":      child.fields,
-					"errors":      child.errors,
+					"grn":              grn,
+					"parent_grn":       parent_grn,
+					"family":           ref.Family,
+					"type":             ref.Type,
+					"id":               ref.Identifier,
+					"resolved_ok":      resolved.OK,
+					"resolved_to":      resolved.Key,
+					"resolved_warning": resolved.Warning,
+					"resolved_time":    resolved.Timestamp,
 				},
 			)
 			if err != nil {
@@ -647,43 +580,60 @@ func (s *sqlEntityServer) writeSearchInfo(
 			if err != nil {
 				return err
 			}
+		}
 
-			err = s.writeSearchInfo(ctx, tx, grn2, child)
-			if err != nil {
-				return err
+		// Traverse entities and insert refs
+		if summary.model.Nested != nil {
+			for _, childModel := range summary.model.Nested {
+				grn = (&entity.GRN{
+					TenantId: summary.parent_grn.TenantId,
+					Kind:     childModel.Kind,
+					UID:      childModel.UID, // append???
+				}).ToGRNString()
+
+				child, err := newSummarySupport(childModel)
+				if err != nil {
+					return err
+				}
+				child.isNested = true
+				child.folder = summary.folder
+				child.parent_grn = summary.parent_grn
+				parent_grn := child.getParentGRN()
+
+				query, args, err := s.dialect.InsertQuery(
+					"entity_nested",
+					map[string]interface{}{
+						"parent_grn":  parent_grn,
+						"grn":         grn,
+						"tenant_id":   summary.parent_grn.TenantId,
+						"kind":        childModel.Kind,
+						"uid":         childModel.UID,
+						"folder":      summary.folder,
+						"name":        child.name,
+						"description": child.description,
+						"labels":      child.labels,
+						"fields":      child.fields,
+						"errors":      child.errors,
+					},
+				)
+				if err != nil {
+					return err
+				}
+
+				_, err = tx.Exec(ctx, query, args...)
+				if err != nil {
+					return err
+				}
+
+				err = s.writeSearchInfo(ctx, tx, grn, child)
+				if err != nil {
+					return err
+				}
 			}
 		}
-	}
+	*/
 
 	return nil
-}
-
-func (s *sqlEntityServer) prepare(ctx context.Context, r *entity.AdminWriteEntityRequest) (*summarySupport, []byte, error) {
-	builder := s.kinds.GetSummaryBuilder(r.GRN.ResourceKind)
-	if builder == nil {
-		return nil, nil, fmt.Errorf("unsupported kind")
-	}
-
-	summary, body, err := builder(ctx, r.GRN.ResourceIdentifier, r.Body)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Update a summary based on the name (unless the root suggested one)
-	if summary.Slug == "" {
-		t := summary.Name
-		if t == "" {
-			t = r.GRN.ResourceIdentifier
-		}
-		summary.Slug = slugify.Slugify(t)
-	}
-
-	summaryjson, err := newSummarySupport(summary)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return summaryjson, body, nil
 }
 
 func (s *sqlEntityServer) Delete(ctx context.Context, r *entity.DeleteEntityRequest) (*entity.DeleteEntityResponse, error) {
@@ -866,6 +816,8 @@ func (s *sqlEntityServer) Search(ctx context.Context, r *entity.EntitySearchRequ
 
 	query, args := entityQuery.toQuery()
 
+	s.log.Info("searching", "query", query, "args", args)
+
 	rows, err := s.sess.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -877,23 +829,24 @@ func (s *sqlEntityServer) Search(ctx context.Context, r *entity.EntitySearchRequ
 		result := &entity.EntitySearchResult{
 			GRN: &grn.GRN{},
 		}
-		summaryjson := summarySupport{}
+
+		var labels []byte
 
 		args := []any{
 			&token, &result.Guid,
 			&result.GRN.TenantID, &result.GRN.ResourceKind, &result.GRN.ResourceIdentifier,
-			&result.Version, &result.Folder, &result.Slug, &summaryjson.errors,
+			&result.Version, &result.Folder, &result.Slug, &result.ErrorJson,
 			&result.Size, &result.UpdatedAt, &result.UpdatedBy,
-			&result.Name, &summaryjson.description,
+			&result.Name, &result.Description,
 		}
 		if r.WithBody {
 			args = append(args, &result.Body, &result.Meta, &result.Status)
 		}
 		if r.WithLabels {
-			args = append(args, &summaryjson.labels)
+			args = append(args, &labels)
 		}
 		if r.WithFields {
-			args = append(args, &summaryjson.fields)
+			args = append(args, &result.FieldsJson)
 		}
 
 		err = rows.Scan(args...)
@@ -908,24 +861,11 @@ func (s *sqlEntityServer) Search(ctx context.Context, r *entity.EntitySearchRequ
 			break
 		}
 
-		if summaryjson.description != nil {
-			result.Description = *summaryjson.description
-		}
-
-		if summaryjson.labels != nil {
-			b := []byte(*summaryjson.labels)
-			err = json.Unmarshal(b, &result.Labels)
+		if labels != nil {
+			err = json.Unmarshal(labels, &result.Labels)
 			if err != nil {
 				return rsp, err
 			}
-		}
-
-		if summaryjson.fields != nil {
-			result.FieldsJson = []byte(*summaryjson.fields)
-		}
-
-		if summaryjson.errors != nil {
-			result.ErrorJson = []byte(*summaryjson.errors)
 		}
 
 		rsp.Results = append(rsp.Results, result)
@@ -952,7 +892,8 @@ func (s *sqlEntityServer) FindReferences(ctx context.Context, r *entity.Referenc
 	}
 
 	fields := []string{
-		"guid", "guid", "tenant_id", "kind", "uid",
+		"guid", "guid",
+		"tenant_id", "kind", "uid",
 		"version", "folder", "slug", "errors", // errors are always returned
 		"size", "updated_at", "updated_by",
 		"name", "description", "meta",
@@ -984,13 +925,13 @@ func (s *sqlEntityServer) FindReferences(ctx context.Context, r *entity.Referenc
 		result := &entity.EntitySearchResult{
 			GRN: &grn.GRN{},
 		}
-		summaryjson := summarySupport{}
 
-		args := []interface{}{
-			&token, &result.Guid, &result.GRN.TenantID, &result.GRN.ResourceKind, &result.GRN.ResourceIdentifier,
-			&result.Version, &result.Folder, &result.Slug, &summaryjson.errors,
+		args := []any{
+			&token, &result.Guid,
+			&result.GRN.TenantID, &result.GRN.ResourceKind, &result.GRN.ResourceIdentifier,
+			&result.Version, &result.Folder, &result.Slug, &result.ErrorJson,
 			&result.Size, &result.UpdatedAt, &result.UpdatedBy,
-			&result.Name, &summaryjson.description, &result.Meta,
+			&result.Name, &result.Description, &result.Meta,
 		}
 
 		err = rows.Scan(args...)
@@ -1004,26 +945,6 @@ func (s *sqlEntityServer) FindReferences(ctx context.Context, r *entity.Referenc
 		// 	rsp.NextPageToken = token
 		// 	break
 		// }
-
-		if summaryjson.description != nil {
-			result.Description = *summaryjson.description
-		}
-
-		if summaryjson.labels != nil {
-			b := []byte(*summaryjson.labels)
-			err = json.Unmarshal(b, &result.Labels)
-			if err != nil {
-				return rsp, err
-			}
-		}
-
-		if summaryjson.fields != nil {
-			result.FieldsJson = []byte(*summaryjson.fields)
-		}
-
-		if summaryjson.errors != nil {
-			result.ErrorJson = []byte(*summaryjson.errors)
-		}
 
 		rsp.Results = append(rsp.Results, result)
 	}

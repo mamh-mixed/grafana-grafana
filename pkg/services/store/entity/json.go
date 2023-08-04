@@ -103,11 +103,12 @@ func (codec *rawEntityCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream)
 			stream.WriteString(sEnc) // works for strings
 		}
 	}
-	if obj.Summary != nil {
+	if obj.Name != "" {
 		stream.WriteMore()
-		stream.WriteObjectField("summary")
-		stream.WriteVal(obj.Summary)
+		stream.WriteObjectField("name")
+		stream.WriteString(obj.Name)
 	}
+	// TODO other ex-summary fields
 	if obj.ETag != "" {
 		stream.WriteMore()
 		stream.WriteObjectField("etag")
@@ -159,10 +160,9 @@ func readEntity(iter *jsoniter.Iterator, raw *Entity) {
 		case "origin":
 			raw.Origin = &EntityOriginInfo{}
 			iter.ReadVal(raw.Origin)
-
-		case "summary":
-			raw.Summary = &EntitySummary{}
-			iter.ReadVal(raw.Summary)
+		case "name":
+			raw.Name = iter.ReadString()
+		// TODO other ex-summary fields
 
 		case "body":
 			var val interface{}
@@ -208,32 +208,22 @@ func (codec *searchResultCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stre
 	stream.WriteObjectStart()
 	stream.WriteObjectField("GRN")
 	stream.WriteVal(obj.GRN)
+	stream.WriteMore()
+	stream.WriteObjectField("name")
+	stream.WriteString(obj.Name)
+	stream.WriteMore()
+	stream.WriteObjectField("description")
+	stream.WriteString(obj.Description)
+	stream.WriteMore()
+	stream.WriteObjectField("size")
+	stream.WriteInt64(obj.Size)
+	stream.WriteMore()
+	stream.WriteObjectField("updatedAt")
+	stream.WriteInt64(obj.UpdatedAt)
+	stream.WriteMore()
+	stream.WriteObjectField("updatedBy")
+	stream.WriteVal(obj.UpdatedBy)
 
-	if obj.Name != "" {
-		stream.WriteMore()
-		stream.WriteObjectField("name")
-		stream.WriteString(obj.Name)
-	}
-	if obj.Description != "" {
-		stream.WriteMore()
-		stream.WriteObjectField("description")
-		stream.WriteString(obj.Description)
-	}
-	if obj.Size > 0 {
-		stream.WriteMore()
-		stream.WriteObjectField("size")
-		stream.WriteInt64(obj.Size)
-	}
-	if obj.UpdatedAt > 0 {
-		stream.WriteMore()
-		stream.WriteObjectField("updatedAt")
-		stream.WriteInt64(obj.UpdatedAt)
-	}
-	if obj.UpdatedBy != "" {
-		stream.WriteMore()
-		stream.WriteObjectField("updatedBy")
-		stream.WriteVal(obj.UpdatedBy)
-	}
 	if obj.Body != nil {
 		stream.WriteMore()
 		if json.Valid(obj.Body) {
@@ -287,20 +277,10 @@ func (codec *writeResponseCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Str
 		stream.WriteObjectField("error")
 		stream.WriteVal(obj.Error)
 	}
-	if obj.GRN != nil {
-		stream.WriteMore()
-		stream.WriteObjectField("GRN")
-		stream.WriteVal(obj.GRN)
-	}
 	if obj.Entity != nil {
 		stream.WriteMore()
 		stream.WriteObjectField("entity")
 		stream.WriteVal(obj.Entity)
-	}
-	if len(obj.SummaryJson) > 0 {
-		stream.WriteMore()
-		stream.WriteObjectField("summary")
-		writeRawJson(stream, obj.SummaryJson)
 	}
 	stream.WriteObjectEnd()
 }
