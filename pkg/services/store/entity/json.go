@@ -206,6 +206,9 @@ func (codec *searchResultCodec) IsEmpty(ptr unsafe.Pointer) bool {
 func (codec *searchResultCodec) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 	obj := (*EntitySearchResult)(ptr)
 	stream.WriteObjectStart()
+	stream.WriteObjectField("GUID")
+	stream.WriteVal(obj.Guid)
+	stream.WriteMore()
 	stream.WriteObjectField("GRN")
 	stream.WriteVal(obj.GRN)
 	stream.WriteMore()
