@@ -114,7 +114,7 @@ require (
 	golang.org/x/oauth2 v0.8.0 // @grafana/grafana-authnz-team
 	golang.org/x/sync v0.3.0 // @grafana/alerting-squad-backend
 	golang.org/x/time v0.3.0 // @grafana/backend-platform
-	golang.org/x/tools v0.7.0 // @grafana/grafana-as-code
+	golang.org/x/tools v0.9.1 // @grafana/grafana-as-code
 	gonum.org/v1/gonum v0.12.0 // @grafana/observability-metrics
 	google.golang.org/api v0.114.0 // @grafana/backend-platform
 	google.golang.org/grpc v1.55.0 // @grafana/plugins-platform-backend
@@ -124,13 +124,13 @@ require (
 	gopkg.in/mail.v2 v2.3.1 // @grafana/backend-platform
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // @grafana/alerting-squad-backend
-	xorm.io/builder v0.3.6 // @grafana/backend-platform
+	xorm.io/builder v0.3.6 // indirect; @grafana/backend-platform
 	xorm.io/core v0.7.3 // @grafana/backend-platform
 	xorm.io/xorm v0.8.2 // @grafana/alerting-squad-backend
 )
 
 require (
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.1.2 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/date v0.3.0 // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
@@ -177,7 +177,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.1-0.20191002090509-6af20e3a5340 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-msgpack v0.5.5 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // @grafana/grafana-as-code
+	github.com/hashicorp/go-multierror v1.1.1 // indirect; @grafana/grafana-as-code
 	github.com/hashicorp/go-sockaddr v1.0.2 // indirect
 	github.com/hashicorp/golang-lru v0.6.0 // indirect
 	github.com/hashicorp/yamux v0.1.1 // indirect
@@ -238,7 +238,7 @@ require (
 	github.com/dlmiddlecote/sqlstats v1.0.2 // @grafana/backend-platform
 	github.com/drone/drone-cli v1.6.1 // @grafana/grafana-delivery
 	github.com/getkin/kin-openapi v0.115.0 // @grafana/grafana-operator-experience-squad
-	github.com/golang-migrate/migrate/v4 v4.7.0 // @grafana/backend-platform
+	github.com/golang-migrate/migrate/v4 v4.16.2 // @grafana/backend-platform
 	github.com/google/go-github/v45 v45.2.0 // @grafana/grafana-delivery
 	github.com/grafana/codejen v0.0.3 // @grafana/dataviz-squad
 	github.com/grafana/dskit v0.0.0-20230706162620-5081d8ed53e6 // @grafana/backend-platform
@@ -272,7 +272,7 @@ require (
 	github.com/weaveworks/common v0.0.0-20230511094633-334485600903 // @grafana/alerting-squad-backend
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // @grafana/grafana-as-code
 	go.opentelemetry.io/contrib/samplers/jaegerremote v0.9.0 // @grafana/backend-platform
-	golang.org/x/mod v0.9.0 // @grafana/backend-platform
+	golang.org/x/mod v0.10.0 // @grafana/backend-platform
 	gopkg.in/square/go-jose.v2 v2.6.0 // @grafana/grafana-authnz-team
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 // @grafana/partner-datasources
 )
@@ -287,6 +287,11 @@ require (
 )
 
 require (
+	github.com/apache/arrow/go/v12 v12.0.1
+	github.com/blang/semver/v4 v4.0.0
+)
+
+require (
 	cloud.google.com/go v0.110.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
@@ -294,13 +299,15 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/NYTimes/gziphandler v1.1.1 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20200520072559-a9ecdc9d1d3a // indirect
-	github.com/alvaroloes/enumer v1.1.2 // indirect
 	github.com/antlr/antlr4/runtime/Go/antlr v1.4.10 // indirect
-	github.com/apache/arrow/go/v12 v12.0.1 // indirect
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/blang/semver/v4 v4.0.0 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.21.0 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.1.41 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.4.35 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.15.5 // indirect
+	github.com/aws/smithy-go v1.14.2 // indirect
 	github.com/bmatcuk/doublestar v1.1.1 // indirect
 	github.com/buildkite/yaml v2.1.0+incompatible // indirect
 	github.com/bwmarrin/snowflake v0.3.0 // indirect
@@ -316,7 +323,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/dgryski/go-farm v0.0.0-20200201041132-a6ae2369ad13 // indirect
-	github.com/docker/distribution v2.8.1+incompatible // indirect
+	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/drone-runners/drone-runner-docker v1.8.2 // indirect
 	github.com/drone/drone-go v1.7.1 // indirect
@@ -372,7 +379,6 @@ require (
 	github.com/ory/go-convenience v0.1.0 // indirect
 	github.com/ory/viper v1.7.5 // indirect
 	github.com/ory/x v0.0.214 // indirect
-	github.com/pascaldekloe/name v0.0.0-20180628100202-0fd16699aae1 // indirect
 	github.com/pborman/uuid v1.2.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/perimeterx/marshmallow v1.1.4 // indirect
@@ -436,11 +442,11 @@ require (
 	cloud.google.com/go/compute v1.19.0 // indirect
 	cloud.google.com/go/iam v0.13.0 // indirect
 	filippo.io/age v1.1.1 // @grafana/grafana-authnz-team
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.2.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.4.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.7.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.7.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.2 // @grafana/backend-platform
-	github.com/Microsoft/go-winio v0.6.0 // indirect
+	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20230426101702-58e86b294756 // @grafana/plugins-platform-backend
 	github.com/RoaringBitmap/roaring v0.9.4 // indirect
 	github.com/acomagu/bufpipe v1.0.3 // indirect
