@@ -279,18 +279,36 @@ func AlertingFileExportFromRoute(orgID int64, route definitions.Route) (definiti
 
 // RouteExportFromRoute creates a definitions.RouteExport DTO from definitions.Route.
 func RouteExportFromRoute(route *definitions.Route) *definitions.RouteExport {
+	emptyStringIfNil := func(d *model.Duration) *string {
+		if d == nil {
+			return nil
+		}
+		s := d.String()
+		return &s
+	}
+
+	matchers := make([]*definitions.MatcherExport, 0, len(route.ObjectMatchers))
+	for _, matcher := range route.ObjectMatchers {
+		matchers = append(matchers, &definitions.MatcherExport{
+			Label: matcher.Name,
+			Match: matcher.Type.String(),
+			Value: matcher.Value,
+		})
+	}
+
 	export := definitions.RouteExport{
-		Receiver:          route.Receiver,
-		GroupByStr:        route.GroupByStr,
-		Match:             route.Match,
-		MatchRE:           route.MatchRE,
-		Matchers:          route.Matchers,
-		ObjectMatchers:    route.ObjectMatchers,
-		MuteTimeIntervals: route.MuteTimeIntervals,
-		Continue:          route.Continue,
-		GroupWait:         route.GroupWait,
-		GroupInterval:     route.GroupInterval,
-		RepeatInterval:    route.RepeatInterval,
+		Receiver:            route.Receiver,
+		GroupByStr:          route.GroupByStr,
+		Match:               route.Match,
+		MatchRE:             route.MatchRE,
+		Matchers:            route.Matchers,
+		ObjectMatchers:      route.ObjectMatchers,
+		ObjectMatchersSlice: matchers,
+		MuteTimeIntervals:   route.MuteTimeIntervals,
+		Continue:            func(b bool) *bool { return &b }(route.Continue),
+		GroupWait:           emptyStringIfNil(route.GroupWait),
+		GroupInterval:       emptyStringIfNil(route.GroupInterval),
+		RepeatInterval:      emptyStringIfNil(route.RepeatInterval),
 	}
 
 	if len(route.Routes) > 0 {
