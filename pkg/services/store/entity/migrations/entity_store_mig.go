@@ -7,7 +7,7 @@ import (
 )
 
 func initEntityTables(mg *migrator.Migrator) string {
-	marker := "Initialize entity tables (v004)" // changing this key wipe+rewrite everything
+	marker := "Initialize entity tables (v005)" // changing this key wipe+rewrite everything
 	mg.AddMigration(marker, &migrator.RawSQLMigration{})
 
 	tables := []migrator.Table{}
@@ -15,7 +15,7 @@ func initEntityTables(mg *migrator.Migrator) string {
 		Name: "entity",
 		Columns: []*migrator.Column{
 			// primary identifier
-			{Name: "guid", Type: migrator.DB_Uuid, Nullable: false, IsPrimaryKey: true},
+			{Name: "guid", Type: migrator.DB_NVarchar, Length: 36, Nullable: false, IsPrimaryKey: true},
 			{Name: "version", Type: migrator.DB_NVarchar, Length: 128, Nullable: false},
 
 			// The entity identifier
@@ -67,7 +67,7 @@ func initEntityTables(mg *migrator.Migrator) string {
 		Columns: []*migrator.Column{
 			// only difference from entity table is that we store multiple versions of the same entity
 			// so we have a unique index on guid+version instead of guid as primary key
-			{Name: "guid", Type: migrator.DB_Uuid, Nullable: false},
+			{Name: "guid", Type: migrator.DB_NVarchar, Length: 36, Nullable: false},
 			{Name: "version", Type: migrator.DB_NVarchar, Length: 128, Nullable: false},
 
 			// The entity identifier
@@ -118,7 +118,7 @@ func initEntityTables(mg *migrator.Migrator) string {
 	tables = append(tables, migrator.Table{
 		Name: "entity_folder",
 		Columns: []*migrator.Column{
-			{Name: "guid", Type: migrator.DB_Uuid, Nullable: false, IsPrimaryKey: true},
+			{Name: "guid", Type: migrator.DB_NVarchar, Length: 36, Nullable: false, IsPrimaryKey: true},
 
 			{Name: "slug_path", Type: migrator.DB_Text, Nullable: false}, // /slug/slug/slug/
 			{Name: "tree", Type: migrator.DB_Text, Nullable: false},      // JSON []{uid, title}
@@ -132,7 +132,7 @@ func initEntityTables(mg *migrator.Migrator) string {
 	tables = append(tables, migrator.Table{
 		Name: "entity_labels",
 		Columns: []*migrator.Column{
-			{Name: "guid", Type: migrator.DB_Uuid, Nullable: false},
+			{Name: "guid", Type: migrator.DB_NVarchar, Length: 36, Nullable: false},
 			{Name: "label", Type: migrator.DB_NVarchar, Length: 190, Nullable: false},
 			{Name: "value", Type: migrator.DB_Text, Nullable: false},
 		},
@@ -145,7 +145,7 @@ func initEntityTables(mg *migrator.Migrator) string {
 		Name: "entity_ref",
 		Columns: []*migrator.Column{
 			// Source:
-			{Name: "guid", Type: migrator.DB_Uuid, Nullable: false},
+			{Name: "guid", Type: migrator.DB_NVarchar, Length: 36, Nullable: false},
 
 			// Address (defined in the body, not resolved, may be invalid and change)
 			{Name: "family", Type: migrator.DB_NVarchar, Length: 190, Nullable: false},
@@ -154,7 +154,7 @@ func initEntityTables(mg *migrator.Migrator) string {
 
 			// Runtime calcs (will depend on the system state)
 			{Name: "resolved_ok", Type: migrator.DB_Bool, Nullable: false},
-			{Name: "resolved_to", Type: migrator.DB_Uuid, Nullable: false},
+			{Name: "resolved_to", Type: migrator.DB_NVarchar, Length: 36, Nullable: false},
 			{Name: "resolved_warning", Type: migrator.DB_Text, Nullable: false},
 			{Name: "resolved_time", Type: migrator.DB_DateTime, Nullable: false}, // resolution cache timestamp
 		},
