@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	alertingNotify "github.com/grafana/alerting/notify"
 	"github.com/prometheus/alertmanager/config"
 	"github.com/prometheus/alertmanager/pkg/labels"
 	"github.com/prometheus/common/model"
@@ -20,6 +21,7 @@ import (
 	apimodels "github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
 	ngmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
 	"github.com/grafana/grafana/pkg/services/secrets"
+	"github.com/grafana/grafana/pkg/util"
 )
 
 const (
@@ -121,6 +123,37 @@ func (m *migration) setupAlertmanagerConfigs(ctx context.Context, rulesPerOrg ma
 	}
 
 	return amConfigPerOrg, nil
+}
+
+// validateAlertmanagerConfig validates the alertmanager configuration produced by the migration against the receivers.
+func (m *migration) validateAlertmanagerConfig(config *apimodels.PostableUserConfig) error {
+	for _, r := range config.AlertmanagerConfig.Receivers {
+		for _, gr := range r.GrafanaManagedReceivers {
+			data, err := gr.Settings.MarshalJSON()
+			if err != nil {
+				return err
+			}
+			var (
+				cfg = &alertingNotify.GrafanaIntegrationConfig{
+					UID:                   gr.UID,
+					Name:                  gr.Name,
+					Type:                  gr.Type,
+					DisableResolveMessage: gr.DisableResolveMessage,
+					Settings:              data,
+					SecureSettings:        gr.SecureSettings,
+				}
+			)
+
+			_, err = alertingNotify.BuildReceiverConfiguration(context.Background(), &alertingNotify.APIReceiver{
+				GrafanaIntegrations: alertingNotify.GrafanaIntegrations{Integrations: []*alertingNotify.GrafanaIntegrationConfig{cfg}},
+			}, m.encryptionService.GetDecryptedValue)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 // contactListToString creates a sorted string representation of a given map (set) of receiver names. Each name will be comma-separated and double-quoted. Names should not contain double quotes.
@@ -390,23 +423,20 @@ func (m *migration) filterReceiversForAlert(name string, channelIDs []uidOrID, r
 func (m *migration) determineChannelUid(c *legacymodels.AlertNotification) (string, error) {
 	legacyUid := c.UID
 	if legacyUid == "" {
-		newUid, err := m.seenUIDs.generateUid()
-		if err != nil {
-			return "", err
-		}
+		newUid := util.GenerateShortUID()
+		m.seenUIDs.add(newUid)
 		m.log.Info("Legacy notification had an empty uid, generating a new one", "id", c.ID, "uid", newUid)
 		return newUid, nil
 	}
 
 	if m.seenUIDs.contains(legacyUid) {
-		newUid, err := m.seenUIDs.generateUid()
-		if err != nil {
-			return "", err
-		}
+		newUid := util.GenerateShortUID()
+		m.seenUIDs.add(newUid)
 		m.log.Warn("Legacy notification had a UID that collides with a migrated record, generating a new one", "id", c.ID, "old", legacyUid, "new", newUid)
 		return newUid, nil
 	}
 
+	m.seenUIDs.add(legacyUid)
 	return legacyUid, nil
 }
 

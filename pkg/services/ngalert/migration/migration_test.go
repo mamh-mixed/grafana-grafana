@@ -16,26 +16,36 @@ import (
 	"github.com/stretchr/testify/require"
 	"xorm.io/xorm"
 
+	"github.com/grafana/grafana/pkg/api/routing"
 	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/localcache"
 	"github.com/grafana/grafana/pkg/infra/serverlock"
 	"github.com/grafana/grafana/pkg/infra/tracing"
+	"github.com/grafana/grafana/pkg/services/accesscontrol/acimpl"
+	"github.com/grafana/grafana/pkg/services/accesscontrol/ossaccesscontrol"
 	"github.com/grafana/grafana/pkg/services/alerting/models"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/datasources/guardian"
 	datasourceService "github.com/grafana/grafana/pkg/services/datasources/service"
+	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/folder/folderimpl"
+	"github.com/grafana/grafana/pkg/services/licensing/licensingtest"
 	apimodels "github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
 	ngModels "github.com/grafana/grafana/pkg/services/ngalert/models"
 	"github.com/grafana/grafana/pkg/services/ngalert/store"
 	"github.com/grafana/grafana/pkg/services/ngalert/tests/fakes"
 	"github.com/grafana/grafana/pkg/services/ngalert/testutil"
 	"github.com/grafana/grafana/pkg/services/org"
+	"github.com/grafana/grafana/pkg/services/org/orgimpl"
+	"github.com/grafana/grafana/pkg/services/quota/quotatest"
 	fake_secrets "github.com/grafana/grafana/pkg/services/secrets/fakes"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
+	"github.com/grafana/grafana/pkg/services/supportbundles/bundleregistry"
+	"github.com/grafana/grafana/pkg/services/team/teamimpl"
+	"github.com/grafana/grafana/pkg/services/user/userimpl"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/tsdb/legacydata"
 )
@@ -472,7 +482,7 @@ func TestAMConfigMigration(t *testing.T) {
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
 			defer teardown(t, x, service)
-			setupLegacyAlertsTables(t, x, tt.legacyChannels, tt.alerts)
+			setupLegacyAlertsTables(t, x, tt.legacyChannels, tt.alerts, nil, nil)
 
 			err := service.Run(context.Background())
 			require.NoError(t, err)
@@ -546,7 +556,17 @@ func TestDashAlertMigration(t *testing.T) {
 				"alert6": {Labels: map[string]string{}},
 			},
 		}
-		setupLegacyAlertsTables(t, x, legacyChannels, alerts)
+		dashes := []*dashboards.Dashboard{
+			createDashboard(t, 1, 1, "dash1-1", 5, nil),
+			createDashboard(t, 2, 1, "dash2-1", 5, nil),
+			createDashboard(t, 3, 2, "dash3-2", 6, nil),
+			createDashboard(t, 4, 2, "dash4-2", 6, nil),
+		}
+		folders := []*dashboards.Dashboard{
+			createFolder(t, 5, 1, "folder5-1"),
+			createFolder(t, 6, 2, "folder6-2"),
+		}
+		setupLegacyAlertsTables(t, x, legacyChannels, alerts, folders, dashes)
 		err := service.Run(context.Background())
 		require.NoError(t, err)
 
@@ -573,7 +593,13 @@ func TestDashAlertMigration(t *testing.T) {
 				"alert1": {Labels: map[string]string{ContactLabel: `"notif_ier1"`}},
 			},
 		}
-		setupLegacyAlertsTables(t, x, legacyChannels, alerts)
+		dashes := []*dashboards.Dashboard{
+			createDashboard(t, 1, 1, "dash1-1", 5, nil),
+		}
+		folders := []*dashboards.Dashboard{
+			createFolder(t, 5, 1, "folder5-1"),
+		}
+		setupLegacyAlertsTables(t, x, legacyChannels, alerts, folders, dashes)
 		err := service.Run(context.Background())
 		require.NoError(t, err)
 
@@ -692,7 +718,7 @@ func TestDashAlertQueryMigration(t *testing.T) {
 			NamespaceUID:    "folder5-1",
 			DashboardUID:    pointer("dash1-1"),
 			PanelID:         pointer(int64(1)),
-			RuleGroup:       "alert1",
+			RuleGroup:       "dash1-1",
 			RuleGroupIndex:  1,
 			NoDataState:     ngModels.NoData,
 			ExecErrState:    ngModels.AlertingErrState,
@@ -707,6 +733,8 @@ func TestDashAlertQueryMigration(t *testing.T) {
 		for _, mutator := range mutators {
 			mutator(rule)
 		}
+
+		rule.RuleGroup = fmt.Sprintf("%s - %d", *rule.DashboardUID, *rule.PanelID)
 
 		rule.Annotations["__dashboardUid__"] = *rule.DashboardUID
 		rule.Annotations["__panelId__"] = strconv.FormatInt(*rule.PanelID, 10)
@@ -993,36 +1021,28 @@ func TestDashAlertQueryMigration(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "alerts in dashboard with custom ACL migrate to newly created folder",
-			alerts: []*models.Alert{
-				createAlertWithCond(t, 1, 10, 1, "alert1", nil,
-					[]dashAlertCondition{
-						createCondition("A", "avg", "gt", 42, 1, "5m", "now"),
-					}),
-			},
-			expectedFolder: &dashboards.Dashboard{
-				OrgID:    1,
-				Title:    "Dashboard With ACL 1 Alerts - dash-with-acl-1",
-				FolderID: 0,
-			},
-			expected: map[int64][]*ngModels.AlertRule{
-				int64(1): {
-					genAlert(func(rule *ngModels.AlertRule) {
-						rule.DashboardUID = pointer("dash-with-acl-1")
-						rule.Data = append(rule.Data, createAlertQuery("A", "ds1-1", "5m", "now"))
-						rule.Data = append(rule.Data, createClassicConditionQuery("B", []classicConditionJSON{
-							cond("A", "avg", "gt", 42),
-						}))
-					}),
-				},
-			},
-		},
 	}
 	for _, tt := range tc {
 		t.Run(tt.name, func(t *testing.T) {
 			defer teardown(t, x, service)
-			setupLegacyAlertsTables(t, x, nil, tt.alerts)
+			dashes := []*dashboards.Dashboard{
+				createDashboard(t, 1, 1, "dash1-1", 5, nil),
+				createDashboard(t, 2, 1, "dash2-1", 5, nil),
+				createDashboard(t, 3, 2, "dash3-2", 6, nil),
+				createDashboard(t, 4, 2, "dash4-2", 6, nil),
+				createDashboard(t, 8, 1, "dash-in-general-1", 0, nil),
+				createDashboard(t, 9, 2, "dash-in-general-2", 0, nil),
+				createDashboard(t, 10, 1, "dash-with-acl-1", 5, func(d *dashboards.Dashboard) {
+					d.Title = "Dashboard With ACL 1"
+					d.HasACL = true
+				}),
+			}
+			folders := []*dashboards.Dashboard{
+				createFolder(t, 5, 1, "folder5-1"),
+				createFolder(t, 6, 2, "folder6-2"),
+				createFolder(t, 7, 1, "General Alerting"),
+			}
+			setupLegacyAlertsTables(t, x, nil, tt.alerts, folders, dashes)
 
 			err := service.Run(context.Background())
 			require.NoError(t, err)
@@ -1193,6 +1213,8 @@ func createDashboard(t *testing.T, id int64, orgId int64, uid string, folderId i
 		Updated:  now,
 		Title:    uid, // Not tested, needed to satisfy constraint.
 		FolderID: folderId,
+		Data:     simplejson.New(),
+		Version:  1,
 	}
 	if mut != nil {
 		mut(d)
@@ -1241,7 +1263,7 @@ func teardown(t *testing.T, x *xorm.Engine, service *MigrationService) {
 }
 
 // setupLegacyAlertsTables inserts data into the legacy alerting tables that is needed for testing the
-func setupLegacyAlertsTables(t *testing.T, x *xorm.Engine, legacyChannels []*models.AlertNotification, alerts []*models.Alert) {
+func setupLegacyAlertsTables(t *testing.T, x *xorm.Engine, legacyChannels []*models.AlertNotification, alerts []*models.Alert, folders []*dashboards.Dashboard, dashes []*dashboards.Dashboard) {
 	t.Helper()
 
 	orgs := []org.Org{
@@ -1249,24 +1271,17 @@ func setupLegacyAlertsTables(t *testing.T, x *xorm.Engine, legacyChannels []*mod
 		*createOrg(t, 2),
 	}
 
-	// Setup dashboards.
-	dashboards := []dashboards.Dashboard{
-		*createDashboard(t, 1, 1, "dash1-1", 5, nil),
-		*createDashboard(t, 2, 1, "dash2-1", 5, nil),
-		*createDashboard(t, 3, 2, "dash3-2", 6, nil),
-		*createDashboard(t, 4, 2, "dash4-2", 6, nil),
-		*createFolder(t, 5, 1, "folder5-1"),
-		*createFolder(t, 6, 2, "folder6-2"),
-		*createFolder(t, 7, 1, "General Alerting"),
-		*createDashboard(t, 8, 1, "dash-in-general-1", 0, nil),
-		*createDashboard(t, 9, 2, "dash-in-general-2", 0, nil),
-		*createDashboard(t, 10, 1, "dash-with-acl-1", 5, func(d *dashboards.Dashboard) {
-			d.Title = "Dashboard With ACL 1"
-			d.HasACL = true
-		}),
+	// Setup folders.
+	if len(folders) > 0 {
+		_, err := x.Insert(folders)
+		require.NoError(t, err)
 	}
-	_, errDashboards := x.Insert(dashboards)
-	require.NoError(t, errDashboards)
+
+	// Setup dashboards.
+	if len(dashes) > 0 {
+		_, err := x.Insert(dashes)
+		require.NoError(t, err)
+	}
 
 	// Setup data_sources.
 	dataSources := []datasources.DataSource{
@@ -1328,6 +1343,8 @@ func NewMigrationService(t *testing.T, sqlStore *sqlstore.SQLStore, cfg *setting
 	if cfg.UnifiedAlerting.BaseInterval == 0 {
 		cfg.UnifiedAlerting.BaseInterval = time.Second * 10
 	}
+	features := featuremgmt.WithFeatures()
+	cfg.IsFeatureToggleEnabled = features.IsEnabled
 	alertingStore := store.DBstore{
 		SQLStore: sqlStore,
 		Cfg:      cfg.UnifiedAlerting,
@@ -1339,6 +1356,30 @@ func NewMigrationService(t *testing.T, sqlStore *sqlstore.SQLStore, cfg *setting
 	folderService := testutil.SetupFolderService(t, cfg, sqlStore, dashboardStore, folderStore, bus)
 
 	cache := localcache.ProvideService()
+	quotaService := &quotatest.FakeQuotaService{}
+	ac := acimpl.ProvideAccessControl(cfg)
+	routeRegister := routing.ProvideRegister()
+	acSvc, err := acimpl.ProvideService(cfg, sqlStore, routing.ProvideRegister(), cache, ac, features)
+	require.NoError(t, err)
+
+	license := licensingtest.NewFakeLicensing()
+	license.On("FeatureEnabled", "accesscontrol.enforcement").Return(true).Maybe()
+	teamSvc := teamimpl.ProvideService(sqlStore, cfg)
+	orgService, err := orgimpl.ProvideService(sqlStore, cfg, quotaService)
+	require.NoError(t, err)
+	userSvc, err := userimpl.ProvideService(sqlStore, orgService, cfg, teamSvc, cache, quotaService, bundleregistry.ProvideService())
+	require.NoError(t, err)
+
+	folderPermissions, err := ossaccesscontrol.ProvideFolderPermissions(
+		features, routeRegister, sqlStore, ac, license, dashboardStore, folderService, acSvc, teamSvc, userSvc)
+	require.NoError(t, err)
+	dashboardPermissions, err := ossaccesscontrol.ProvideDashboardPermissions(
+		features, routeRegister, sqlStore, ac, license, dashboardStore, folderService, acSvc, teamSvc, userSvc)
+	require.NoError(t, err)
+
+	err = acSvc.RegisterFixedRoles(context.Background())
+	require.NoError(t, err)
+
 	ms, err := ProvideService(
 		serverlock.ProvideService(sqlStore, tracer),
 		cfg,
@@ -1349,6 +1390,8 @@ func NewMigrationService(t *testing.T, sqlStore *sqlstore.SQLStore, cfg *setting
 		dashboardService,
 		folderService,
 		datasourceService.ProvideCacheService(cache, sqlStore, guardian.ProvideGuardian()),
+		folderPermissions,
+		dashboardPermissions,
 	)
 	require.NoError(t, err)
 	return ms

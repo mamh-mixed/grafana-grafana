@@ -26,7 +26,8 @@ const (
 	ErrorAlertName = "DatasourceError"
 )
 
-func (m *migration) addErrorSilence(da dashAlert, rule *models.AlertRule) error {
+// addErrorSilence adds a silence for the given rule to the orgMigration if the ExecutionErrorState was set to keep_state.
+func (om *orgMigration) addErrorSilence(da dashAlert, rule *models.AlertRule) error {
 	if da.ParsedSettings.ExecutionErrorState != "keep_state" {
 		return nil
 	}
@@ -58,14 +59,12 @@ func (m *migration) addErrorSilence(da dashAlert, rule *models.AlertRule) error 
 		},
 		ExpiresAt: time.Now().AddDate(1, 0, 0), // 1 year
 	}
-	if _, ok := m.silences[da.OrgId]; !ok {
-		m.silences[da.OrgId] = make([]*pb.MeshSilence, 0)
-	}
-	m.silences[da.OrgId] = append(m.silences[da.OrgId], s)
+	om.silences = append(om.silences, s)
 	return nil
 }
 
-func (m *migration) addNoDataSilence(da dashAlert, rule *models.AlertRule) error {
+// addNoDataSilence adds a silence for the given rule to the orgMigration if the NoDataState was set to keep_state.
+func (om *orgMigration) addNoDataSilence(da dashAlert, rule *models.AlertRule) error {
 	if da.ParsedSettings.NoDataState != "keep_state" {
 		return nil
 	}
@@ -97,28 +96,20 @@ func (m *migration) addNoDataSilence(da dashAlert, rule *models.AlertRule) error
 		},
 		ExpiresAt: time.Now().AddDate(1, 0, 0), // 1 year.
 	}
-	_, ok := m.silences[da.OrgId]
-	if !ok {
-		m.silences[da.OrgId] = make([]*pb.MeshSilence, 0)
-	}
-	m.silences[da.OrgId] = append(m.silences[da.OrgId], s)
+	om.silences = append(om.silences, s)
 	return nil
 }
 
-func (m *migration) writeSilencesFile(orgID int64) error {
+func (om *orgMigration) writeSilencesFile() error {
 	var buf bytes.Buffer
-	orgSilences, ok := m.silences[orgID]
-	if !ok {
-		return nil
-	}
-
-	for _, e := range orgSilences {
+	om.log.Info("Writing silences file", "silences", len(om.silences))
+	for _, e := range om.silences {
 		if _, err := pbutil.WriteDelimited(&buf, e); err != nil {
 			return err
 		}
 	}
 
-	f, err := openReplace(silencesFileNameForOrg(m.cfg.DataPath, orgID))
+	f, err := openReplace(silencesFileNameForOrg(om.dataPath, om.orgID))
 	if err != nil {
 		return err
 	}

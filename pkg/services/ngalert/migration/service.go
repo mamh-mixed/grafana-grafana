@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/grafana/grafana/pkg/infra/kvstore"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/serverlock"
+	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/folder"
@@ -33,17 +35,19 @@ const actionName = "alerting migration"
 var ForceMigrationError = fmt.Errorf("Grafana has already been migrated to Unified Alerting. Any alert rules created while using Unified Alerting will be deleted by rolling back. Set force_migration=true in your grafana.ini and restart Grafana to roll back and delete Unified Alerting configuration data.")
 
 type MigrationService struct {
-	lock              *serverlock.ServerLockService
-	store             db.DB
-	cfg               *setting.Cfg
-	log               log.Logger
-	kv                *kvstore.NamespacedKVStore
-	ruleStore         RuleStore
-	alertingStore     AlertingStore
-	encryptionService secrets.Service
-	dashboardService  dashboards.DashboardService
-	folderService     folder.Service
-	dataSourceCache   datasources.CacheService
+	lock                 *serverlock.ServerLockService
+	store                db.DB
+	cfg                  *setting.Cfg
+	log                  log.Logger
+	kv                   *kvstore.NamespacedKVStore
+	ruleStore            RuleStore
+	alertingStore        AlertingStore
+	encryptionService    secrets.Service
+	dashboardService     dashboards.DashboardService
+	folderService        folder.Service
+	dataSourceCache      datasources.CacheService
+	folderPermissions    accesscontrol.FolderPermissionsService
+	dashboardPermissions accesscontrol.DashboardPermissionsService
 }
 
 func ProvideService(
@@ -56,19 +60,23 @@ func ProvideService(
 	dashboardService dashboards.DashboardService,
 	folderService folder.Service,
 	dataSourceCache datasources.CacheService,
+	folderPermissions accesscontrol.FolderPermissionsService,
+	dashboardPermissions accesscontrol.DashboardPermissionsService,
 ) (*MigrationService, error) {
 	return &MigrationService{
-		lock:              lock,
-		log:               log.New("ngalert.migration"),
-		cfg:               cfg,
-		store:             sqlStore,
-		kv:                kvstore.WithNamespace(kv, 0, KVNamespace),
-		ruleStore:         ruleStore,
-		alertingStore:     ruleStore,
-		encryptionService: encryptionService,
-		dashboardService:  dashboardService,
-		folderService:     folderService,
-		dataSourceCache:   dataSourceCache,
+		lock:                 lock,
+		log:                  log.New("ngalert.migration"),
+		cfg:                  cfg,
+		store:                sqlStore,
+		kv:                   kvstore.WithNamespace(kv, 0, KVNamespace),
+		ruleStore:            ruleStore,
+		alertingStore:        ruleStore,
+		encryptionService:    encryptionService,
+		dashboardService:     dashboardService,
+		folderService:        folderService,
+		dataSourceCache:      dataSourceCache,
+		folderPermissions:    folderPermissions,
+		dashboardPermissions: dashboardPermissions,
 	}, nil
 }
 
@@ -112,16 +120,18 @@ func (ms *MigrationService) Run(ctx context.Context) error {
 			}
 
 			ms.log.Info("Starting legacy migration")
-			mg := newMigration(ms.log,
+			mg := newMigration(
+				ms.log,
 				ms.cfg,
 				ms.store,
 				ms.ruleStore,
 				ms.alertingStore,
-				ms.store.GetDialect(),
 				ms.encryptionService,
 				ms.dashboardService,
 				ms.folderService,
 				ms.dataSourceCache,
+				ms.folderPermissions,
+				ms.dashboardPermissions,
 			)
 
 			err = mg.Exec(ctx)
@@ -186,14 +196,19 @@ func (ms *MigrationService) Revert(ctx context.Context) error {
 			return err
 		}
 
-		_, err = sess.Exec("delete from dashboard_acl where dashboard_id IN (select id from dashboard where created_by = ?)", FOLDER_CREATED_BY)
-		if err != nil {
+		var results []struct {
+			ID    int64 `xorm:"id"`
+			OrgID int64 `xorm:"org_id"`
+		}
+		if err := sess.SQL("select id from dashboard where created_by = ?", FOLDER_CREATED_BY).Find(&results); err != nil {
 			return err
 		}
 
-		_, err = sess.Exec("delete from dashboard where created_by = ?", FOLDER_CREATED_BY)
-		if err != nil {
-			return err
+		for _, result := range results {
+			err := ms.dashboardService.DeleteDashboard(ctx, result.ID, result.OrgID) // Also handles permissions and other related entities.
+			if err != nil {
+				return err
+			}
 		}
 
 		_, err = sess.Exec("delete from alert_configuration")
@@ -223,7 +238,7 @@ func (ms *MigrationService) Revert(ctx context.Context) error {
 			}
 		}
 
-		files, err := getSilenceFileNamesForAllOrgs(ms.cfg.DataPath)
+		files, err := filepath.Glob(filepath.Join(ms.cfg.DataPath, "alerting", "*", "silences"))
 		if err != nil {
 			return err
 		}

@@ -1,6 +1,7 @@
 package migration
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -8,9 +9,12 @@ import (
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/log"
 	legacymodels "github.com/grafana/grafana/pkg/services/alerting/models"
+	"github.com/grafana/grafana/pkg/services/dashboards"
+	"github.com/grafana/grafana/pkg/services/folder"
 	ngmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
 	"github.com/grafana/grafana/pkg/services/ngalert/store"
 	"github.com/grafana/grafana/pkg/tsdb/graphite"
+	"github.com/grafana/grafana/pkg/util"
 )
 
 const (
@@ -19,6 +23,27 @@ const (
 	// It was created as a means to simplify post-migration notification policies.
 	ContactLabel = "__contacts__"
 )
+
+// migrateAlert migrates a single dashboard alert from legacy alerting to unified alerting.
+func (om *orgMigration) migrateAlert(ctx context.Context, l log.Logger, da dashAlert, dash *dashboards.Dashboard, f *folder.Folder) (*ngmodels.AlertRule, []uidOrID, error) {
+	l.Debug("migrating alert rule to Unified Alerting")
+	var parsedSettings dashAlertSettings
+	err := json.Unmarshal(da.Settings, &parsedSettings)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse settings: %w", err)
+	}
+	newCond, err := transConditions(ctx, parsedSettings, da.OrgId, om.dsCacheService)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to transform conditions: %w", err)
+	}
+
+	rule, err := om.makeAlertRule(l, *newCond, da, dash, f.UID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to make alert rule: %w", err)
+	}
+
+	return rule, extractChannelIDs(parsedSettings), nil
+}
 
 func addMigrationInfo(da *dashAlert, dashboardUID string) (map[string]string, map[string]string) {
 	tagsMap := simplejson.NewFromAny(da.ParsedSettings.AlertRuleTags).MustMap()
@@ -36,8 +61,9 @@ func addMigrationInfo(da *dashAlert, dashboardUID string) (map[string]string, ma
 	return lbls, annotations
 }
 
-func (m *migration) makeAlertRule(l log.Logger, cond condition, da dashAlert, dashboardUID string, folderUID string) (*ngmodels.AlertRule, error) {
-	lbls, annotations := addMigrationInfo(&da, dashboardUID)
+// makeAlertRule creates an alert rule from a dashboard alert and the given translated condition.
+func (om *orgMigration) makeAlertRule(l log.Logger, cond condition, da dashAlert, dash *dashboards.Dashboard, folderUID string) (*ngmodels.AlertRule, error) {
+	lbls, annotations := addMigrationInfo(&da, dash.UID)
 
 	message := MigrateTmpl(l.New("field", "message"), da.Message)
 	annotations["message"] = message
@@ -47,12 +73,25 @@ func (m *migration) makeAlertRule(l log.Logger, cond condition, da dashAlert, da
 		return nil, fmt.Errorf("failed to migrate alert rule queries: %w", err)
 	}
 
-	uid, err := m.seenUIDs.generateUid()
-	if err != nil {
-		return nil, fmt.Errorf("failed to migrate alert rule: %w", err)
+	// Here we ensure that the alert rule title is unique within the folder.
+	if _, ok := om.alertRuleTitleDedup[folderUID]; !ok {
+		om.alertRuleTitleDedup[folderUID] = deduplicator{
+			set:             make(map[string]struct{}),
+			caseInsensitive: om.dialect.SupportEngine(),
+			maxLen:          store.AlertDefinitionMaxTitleLength,
+		}
 	}
-
-	name := normalizeRuleName(da.Name, uid)
+	dedupSet := om.alertRuleTitleDedup[folderUID]
+	name := truncateRuleName(da.Name)
+	if dedupSet.contains(name) {
+		dedupedName, err := dedupSet.deduplicate(name)
+		if err != nil {
+			return nil, fmt.Errorf("failed to deduplicate alert rule name: %w", err)
+		}
+		om.log.Warn("duplicate alert rule name detected, renaming", "old_name", name, "new_name", dedupedName)
+		name = dedupedName
+	}
+	dedupSet.add(name)
 
 	isPaused := false
 	if da.State == "paused" {
@@ -61,16 +100,16 @@ func (m *migration) makeAlertRule(l log.Logger, cond condition, da dashAlert, da
 
 	ar := &ngmodels.AlertRule{
 		OrgID:           da.OrgId,
-		Title:           name, // TODO: Make sure all names are unique, make new name on constraint insert error.
-		UID:             uid,
+		Title:           name,
+		UID:             util.GenerateShortUID(),
 		Condition:       cond.Condition,
 		Data:            data,
 		IntervalSeconds: ruleAdjustInterval(da.Frequency),
 		Version:         1,
-		NamespaceUID:    folderUID, // Folder already created, comes from env var.
-		DashboardUID:    &dashboardUID,
+		NamespaceUID:    folderUID,
+		DashboardUID:    &dash.UID,
 		PanelID:         &da.PanelId,
-		RuleGroup:       name,
+		RuleGroup:       fmt.Sprintf("%s - %d", dash.Title, da.PanelId), // Unique to this dash alert but still contains useful info.
 		For:             da.For,
 		Updated:         time.Now().UTC(),
 		Annotations:     annotations,
@@ -85,12 +124,12 @@ func (m *migration) makeAlertRule(l log.Logger, cond condition, da dashAlert, da
 	n, v := getLabelForSilenceMatching(ar.UID)
 	ar.Labels[n] = v
 
-	if err := m.addErrorSilence(da, ar); err != nil {
-		m.log.Error("Alert migration error: failed to create silence for Error", "rule_name", ar.Title, "err", err)
+	if err := om.addErrorSilence(da, ar); err != nil {
+		om.log.Error("Alert migration error: failed to create silence for Error", "rule_name", ar.Title, "err", err)
 	}
 
-	if err := m.addNoDataSilence(da, ar); err != nil {
-		m.log.Error("Alert migration error: failed to create silence for NoData", "rule_name", ar.Title, "err", err)
+	if err := om.addNoDataSilence(da, ar); err != nil {
+		om.log.Error("Alert migration error: failed to create silence for NoData", "rule_name", ar.Title, "err", err)
 	}
 
 	return ar, nil
@@ -247,20 +286,18 @@ func transExecErr(l log.Logger, s string) ngmodels.ExecutionErrorState {
 	}
 }
 
-func normalizeRuleName(daName string, uid string) string {
-	// If we have to truncate, we're losing data and so there is higher risk of uniqueness conflicts.
-	// Append the UID to the suffix to forcibly break any collisions.
+// truncateRuleName truncates the rule name to the maximum allowed length.
+func truncateRuleName(daName string) string {
 	if len(daName) > store.AlertDefinitionMaxTitleLength {
-		trunc := store.AlertDefinitionMaxTitleLength - 1 - len(uid)
-		daName = daName[:trunc] + "_" + uid
+		return daName[:store.AlertDefinitionMaxTitleLength]
 	}
-
 	return daName
 }
 
-func extractChannelIDs(d dashAlert) (channelUids []uidOrID) {
+// extractChannelIDs extracts the notification channel IDs from the given legacy dashboard alert parsed settings.
+func extractChannelIDs(parsedSettings dashAlertSettings) (channelUids []uidOrID) {
 	// Extracting channel UID/ID.
-	for _, ui := range d.ParsedSettings.Notifications {
+	for _, ui := range parsedSettings.Notifications {
 		if ui.UID != "" {
 			channelUids = append(channelUids, ui.UID)
 			continue
