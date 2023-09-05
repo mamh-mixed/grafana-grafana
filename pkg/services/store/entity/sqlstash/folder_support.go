@@ -87,7 +87,7 @@ func buildFolderTree(all []*folderInfo) (*folderInfo, []*folderInfo, error) {
 	lost := []*folderInfo{}
 	lookup := make(map[string]*folderInfo)
 	for _, folder := range all {
-		lookup[folder.Guid] = folder
+		lookup[folder.UID] = folder
 	}
 
 	root := &folderInfo{
