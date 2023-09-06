@@ -41,6 +41,7 @@ type MigrationService struct {
 	log                  log.Logger
 	kv                   *kvstore.NamespacedKVStore
 	ruleStore            RuleStore
+	dashboardStore       dashboards.Store
 	alertingStore        AlertingStore
 	encryptionService    secrets.Service
 	dashboardService     dashboards.DashboardService
@@ -56,6 +57,7 @@ func ProvideService(
 	sqlStore db.DB,
 	kv kvstore.KVStore,
 	ruleStore *store.DBstore,
+	dashboardStore dashboards.Store,
 	encryptionService secrets.Service,
 	dashboardService dashboards.DashboardService,
 	folderService folder.Service,
@@ -70,6 +72,7 @@ func ProvideService(
 		store:                sqlStore,
 		kv:                   kvstore.WithNamespace(kv, 0, KVNamespace),
 		ruleStore:            ruleStore,
+		dashboardStore:       dashboardStore,
 		alertingStore:        ruleStore,
 		encryptionService:    encryptionService,
 		dashboardService:     dashboardService,
@@ -125,6 +128,7 @@ func (ms *MigrationService) Run(ctx context.Context) error {
 				ms.cfg,
 				ms.store,
 				ms.ruleStore,
+				ms.dashboardStore,
 				ms.alertingStore,
 				ms.encryptionService,
 				ms.dashboardService,

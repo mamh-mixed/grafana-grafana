@@ -45,8 +45,10 @@ var (
 
 // folderHelper is a helper struct for migrating dashboard/folders and their permissions.
 type folderHelper struct {
-	dialect       migrator.Dialect
-	folderService folder.Service
+	dialect          migrator.Dialect
+	folderService    folder.Service
+	dashboardService dashboards.DashboardService
+	dashboardStore   dashboards.Store
 
 	folderPermissions    accesscontrol.FolderPermissionsService
 	dashboardPermissions accesscontrol.DashboardPermissionsService
@@ -374,21 +376,40 @@ func (fh *folderHelper) getOrCreateGeneralAlertingFolder(ctx context.Context, or
 
 // createFolder creates a new folder with given permissions.
 func (fh *folderHelper) createFolder(ctx context.Context, orgID int64, title string, newPerms []accesscontrol.SetResourcePermissionCommand) (*folder.Folder, error) {
-	f, err := fh.folderService.Create(ctx, &folder.CreateFolderCommand{
-		OrgID:        orgID,
-		Title:        title,
-		SignedInUser: getBackgroundUser(orgID),
-	})
+	// We would like to track folders created through migration using the created_by field, however folderService.Create
+	// currently clobbers userIDs < -1. As a workaround, we create a folder in a more roundabout manner.
+	usr := getBackgroundUser(orgID)
+	dashFolder := dashboards.NewDashboardFolder(title)
+	dashFolder.OrgID = orgID
+	dashFolder.CreatedBy = usr.UserID
+	dashFolder.UpdatedBy = usr.UserID
+	dashFolder.UpdateSlug()
+
+	dto := &dashboards.SaveDashboardDTO{
+		Dashboard: dashFolder,
+		OrgID:     orgID,
+		User:      usr,
+	}
+
+	saveDashboardCmd, err := fh.dashboardService.BuildSaveDashboardCommand(ctx, dto, false, false)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build save command: %w", err)
+	}
+
+	// Workaround for negative user IDs being overwritten.
+	saveDashboardCmd.UserID = usr.UserID
+
+	dash, err := fh.dashboardStore.SaveDashboard(ctx, *saveDashboardCmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to save: %w", err)
 	}
 
 	if len(newPerms) > 0 {
-		_, err = fh.folderPermissions.SetPermissions(ctx, orgID, f.UID, newPerms...)
+		_, err = fh.folderPermissions.SetPermissions(ctx, orgID, dash.UID, newPerms...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to set permissions: %w", err)
 		}
 	}
 
-	return f, nil
+	return dashboards.FromDashboard(dash), nil
 }

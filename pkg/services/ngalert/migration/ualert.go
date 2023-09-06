@@ -42,6 +42,7 @@ type migration struct {
 
 	store             db.DB
 	ruleStore         RuleStore
+	dashboardStore    dashboards.Store
 	alertingStore     AlertingStore
 	encryptionService secrets.Service
 	dashboardService  dashboards.DashboardService
@@ -57,6 +58,7 @@ func newMigration(
 	cfg *setting.Cfg,
 	store db.DB,
 	ruleStore RuleStore,
+	dashboardStore dashboards.Store,
 	alertingStore AlertingStore,
 	encryptionService secrets.Service,
 	dashboardService dashboards.DashboardService,
@@ -73,6 +75,7 @@ func newMigration(
 		cfg:                  cfg,
 		store:                store,
 		ruleStore:            ruleStore,
+		dashboardStore:       dashboardStore,
 		alertingStore:        alertingStore,
 		encryptionService:    encryptionService,
 		dashboardService:     dashboardService,
@@ -111,6 +114,8 @@ func newOrgMigration(m *migration, orgID int64) *orgMigration {
 		folderHelper: folderHelper{
 			dialect:                  m.dialect,
 			folderService:            m.folderService,
+			dashboardService:         m.dashboardService,
+			dashboardStore:           m.dashboardStore,
 			folderPermissions:        m.folderPermissions,
 			dashboardPermissions:     m.dashboardPermissions,
 			permissionsMap:           make(map[int64]map[permissionHash]*folder.Folder),

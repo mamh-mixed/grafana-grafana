@@ -1386,6 +1386,7 @@ func NewMigrationService(t *testing.T, sqlStore *sqlstore.SQLStore, cfg *setting
 		sqlStore,
 		fakes.NewFakeKVStore(t),
 		&alertingStore,
+		dashboardStore,
 		fake_secrets.NewFakeSecretsService(),
 		dashboardService,
 		folderService,
