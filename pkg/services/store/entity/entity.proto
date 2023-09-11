@@ -8,6 +8,7 @@ import "pkg/infra/grn/grn.proto";
 message EntitySummary {
   string UID = 1;
 	string kind = 2;
+
 	string name = 3;
 	string description = 4;
 

@@ -349,6 +349,10 @@ func (b *BaseDialect) GetDBName(_ string) (string, error) {
 }
 
 func (b *BaseDialect) InsertQuery(tableName string, row map[string]any) (string, []any, error) {
+	if len(row) < 1 {
+		return "", nil, fmt.Errorf("no columns provided")
+	}
+
 	cols := []string{}
 	vals := []any{}
 	for col, val := range row {
@@ -359,6 +363,14 @@ func (b *BaseDialect) InsertQuery(tableName string, row map[string]any) (string,
 }
 
 func (b *BaseDialect) UpdateQuery(tableName string, row map[string]any, where map[string]any) (string, []any, error) {
+	if len(row) < 1 {
+		return "", nil, fmt.Errorf("no columns provided")
+	}
+
+	if len(where) < 1 {
+		return "", nil, fmt.Errorf("no where clause provided")
+	}
+
 	cols := []string{}
 	vals := []any{}
 	for col, val := range row {

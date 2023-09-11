@@ -326,6 +326,9 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 					return err
 				}
 			}
+		} else {
+			// generate guid for new entity
+			current.Guid = ulid.Make().String()
 		}
 
 		// Set the comment on this write
@@ -349,70 +352,6 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 		current.ETag = etag
 		current.UpdatedAt = updatedAt
 		current.UpdatedBy = updatedBy
-
-		/*
-			meta := &kinds.GrafanaResourceMetadata{}
-			if len(r.Entity.Meta) > 0 {
-				err = json.Unmarshal(r.Entity.Meta, meta)
-				if err != nil {
-					return err
-				}
-			}
-			meta.Name = grn.UID
-			if meta.Namespace == "" {
-				meta.Namespace = "default" // USE tenant id
-			}
-
-			if meta.UID == "" {
-				meta.UID = types.UID(uuid.New().String())
-			}
-			if meta.Annotations == nil {
-				meta.Annotations = make(map[string]string)
-			}
-
-			meta.ResourceVersion = current.Version
-			meta.Namespace = util.OrgIdToNamespace(grn.TenantId)
-
-			meta.SetFolder(r.Entity.Folder)
-
-			if !isUpdate {
-				if createdAt < 1000 {
-					createdAt = updatedAt
-				}
-				if createdBy == "" {
-					createdBy = updatedBy
-				}
-			}
-			if createdAt > 0 {
-				meta.CreationTimestamp = v1.NewTime(time.UnixMilli(createdAt))
-			}
-			if updatedAt > 0 {
-				meta.SetUpdatedTimestamp(util.Pointer(time.UnixMilli(updatedAt)))
-			}
-
-			if origin != nil {
-				var ts *time.Time
-				if origin.Time > 0 {
-					ts = util.Pointer(time.UnixMilli(origin.Time))
-				}
-				meta.SetOriginInfo(&kinds.ResourceOriginInfo{
-					Name:      origin.Source,
-					Key:       origin.Key,
-					Timestamp: ts,
-				})
-			}
-
-			if len(meta.Labels) > 0 {
-				for k, v := range meta.Labels {
-					current.Labels[k] = v
-				}
-			}
-			current.Meta, err = json.Marshal(meta)
-			if err != nil {
-				return err
-			}
-		*/
-		// rsp.Entity.Guid = string(meta.UID)
 
 		values := map[string]any{
 			// below are only set at creation
@@ -550,88 +489,6 @@ func (s *sqlEntityServer) writeSearchInfo(
 			return err
 		}
 	}
-
-	// Resolve references
-	/*
-		for _, ref := range summary.model.References {
-			resolved, err := s.resolver.Resolve(ctx, ref)
-			if err != nil {
-				return err
-			}
-			query, args, err := s.dialect.InsertQuery(
-				"entity_ref",
-				map[string]any{
-					"grn":              grn,
-					"parent_grn":       parent_grn,
-					"family":           ref.Family,
-					"type":             ref.Type,
-					"id":               ref.Identifier,
-					"resolved_ok":      resolved.OK,
-					"resolved_to":      resolved.Key,
-					"resolved_warning": resolved.Warning,
-					"resolved_time":    resolved.Timestamp,
-				},
-			)
-			if err != nil {
-				return err
-			}
-
-			_, err = tx.Exec(ctx, query, args...)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Traverse entities and insert refs
-		if summary.model.Nested != nil {
-			for _, childModel := range summary.model.Nested {
-				grn = (&entity.GRN{
-					TenantId: summary.parent_grn.TenantId,
-					Kind:     childModel.Kind,
-					UID:      childModel.UID, // append???
-				}).ToGRNString()
-
-				child, err := newSummarySupport(childModel)
-				if err != nil {
-					return err
-				}
-				child.isNested = true
-				child.folder = summary.folder
-				child.parent_grn = summary.parent_grn
-				parent_grn := child.getParentGRN()
-
-				query, args, err := s.dialect.InsertQuery(
-					"entity_nested",
-					map[string]any{
-						"parent_grn":  parent_grn,
-						"grn":         grn,
-						"tenant_id":   summary.parent_grn.TenantId,
-						"kind":        childModel.Kind,
-						"uid":         childModel.UID,
-						"folder":      summary.folder,
-						"name":        child.name,
-						"description": child.description,
-						"labels":      child.labels,
-						"fields":      child.fields,
-						"errors":      child.errors,
-					},
-				)
-				if err != nil {
-					return err
-				}
-
-				_, err = tx.Exec(ctx, query, args...)
-				if err != nil {
-					return err
-				}
-
-				err = s.writeSearchInfo(ctx, tx, grn, child)
-				if err != nil {
-					return err
-				}
-			}
-		}
-	*/
 
 	return nil
 }
