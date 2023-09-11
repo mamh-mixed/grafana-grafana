@@ -74,8 +74,8 @@ type Dialect interface {
 
 	GetDBName(string) (string, error)
 
-	InsertQuery(tableName string, row map[string]interface{}) (string, []interface{}, error)
-	UpdateQuery(tableName string, row map[string]interface{}, where map[string]interface{}) (string, []interface{}, error)
+	InsertQuery(tableName string, row map[string]any) (string, []any, error)
+	UpdateQuery(tableName string, row map[string]any, where map[string]any) (string, []any, error)
 }
 
 type LockCfg struct {
@@ -348,9 +348,9 @@ func (b *BaseDialect) GetDBName(_ string) (string, error) {
 	return "", nil
 }
 
-func (b *BaseDialect) InsertQuery(tableName string, row map[string]interface{}) (string, []interface{}, error) {
+func (b *BaseDialect) InsertQuery(tableName string, row map[string]any) (string, []any, error) {
 	cols := []string{}
-	vals := []interface{}{}
+	vals := []any{}
 	for col, val := range row {
 		cols = append(cols, b.dialect.Quote(col))
 		vals = append(vals, val)
@@ -358,9 +358,9 @@ func (b *BaseDialect) InsertQuery(tableName string, row map[string]interface{}) 
 	return fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)", b.dialect.Quote(tableName), strings.Join(cols, ", "), strings.Repeat("?, ", len(row)-1)+"?"), vals, nil
 }
 
-func (b *BaseDialect) UpdateQuery(tableName string, row map[string]interface{}, where map[string]interface{}) (string, []interface{}, error) {
+func (b *BaseDialect) UpdateQuery(tableName string, row map[string]any, where map[string]any) (string, []any, error) {
 	cols := []string{}
-	vals := []interface{}{}
+	vals := []any{}
 	for col, val := range row {
 		cols = append(cols, b.dialect.Quote(col)+"=?")
 		vals = append(vals, val)

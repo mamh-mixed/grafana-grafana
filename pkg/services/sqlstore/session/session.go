@@ -127,7 +127,7 @@ func execWithReturningId(ctx context.Context, driverName string, query string, s
 }
 
 type SessionQuerier interface {
-	Query(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+	Query(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
 var _ SessionQuerier = &SessionDB{}

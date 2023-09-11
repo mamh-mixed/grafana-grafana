@@ -159,7 +159,7 @@ func (s *sqlEntityServer) read(ctx context.Context, tx session.SessionQuerier, r
 
 	table := "entity"
 	where := " (tenant_id=? AND kind=? AND uid=?)"
-	args := []interface{}{grn.TenantID, grn.ResourceKind, grn.ResourceIdentifier}
+	args := []any{grn.TenantID, grn.ResourceKind, grn.ResourceIdentifier}
 
 	if r.Version != "" {
 		table = "entity_history"
@@ -414,7 +414,7 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 		*/
 		// rsp.Entity.Guid = string(meta.UID)
 
-		values := map[string]interface{}{
+		values := map[string]any{
 			// below are only set at creation
 			"guid":       current.Guid,
 			"tenant_id":  grn.TenantID,
@@ -470,7 +470,7 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 			query, args, err := s.dialect.UpdateQuery(
 				"entity",
 				values,
-				map[string]interface{}{
+				map[string]any{
 					"guid": current.Guid,
 				},
 			)
@@ -534,7 +534,7 @@ func (s *sqlEntityServer) writeSearchInfo(
 	for k, v := range current.Labels {
 		query, args, err := s.dialect.InsertQuery(
 			"entity_labels",
-			map[string]interface{}{
+			map[string]any{
 				"grn":   current.GRN.ToGRNString(),
 				"label": k,
 				"value": v,
@@ -560,7 +560,7 @@ func (s *sqlEntityServer) writeSearchInfo(
 			}
 			query, args, err := s.dialect.InsertQuery(
 				"entity_ref",
-				map[string]interface{}{
+				map[string]any{
 					"grn":              grn,
 					"parent_grn":       parent_grn,
 					"family":           ref.Family,
@@ -602,7 +602,7 @@ func (s *sqlEntityServer) writeSearchInfo(
 
 				query, args, err := s.dialect.InsertQuery(
 					"entity_nested",
-					map[string]interface{}{
+					map[string]any{
 						"parent_grn":  parent_grn,
 						"grn":         grn,
 						"tenant_id":   summary.parent_grn.TenantId,
@@ -703,7 +703,7 @@ func (s *sqlEntityServer) History(ctx context.Context, r *entity.EntityHistoryRe
 	query := s.getReadSelect(rr) +
 		" FROM entity_history" +
 		" WHERE (tenant_id=? AND kind=? AND uid=?)"
-	args := []interface{}{
+	args := []any{
 		grn2.TenantID, grn2.ResourceKind, grn2.ResourceIdentifier,
 	}
 
