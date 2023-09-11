@@ -11,6 +11,7 @@ import (
 
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
+	"github.com/grafana/grafana/pkg/services/auth/identity"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/folder"
@@ -31,6 +32,10 @@ var (
 		{Action: accesscontrol.ActionOrgUsersRead, Scope: accesscontrol.ScopeUsersAll},
 		{Action: accesscontrol.ActionTeamsRead, Scope: accesscontrol.ScopeTeamsAll},
 	}
+	// revertPermissions are the permissions required for the background user to revert the migration.
+	revertPermissions = []accesscontrol.Permission{
+		{Action: dashboards.ActionFoldersDelete, Scope: dashboards.ScopeFoldersAll},
+	}
 	// generalAlertingFolderTitle is the title of the general alerting folder. This is used for dashboard alerts in the general folder.
 	generalAlertingFolderTitle = "General Alerting"
 
@@ -45,10 +50,9 @@ var (
 
 // folderHelper is a helper struct for migrating dashboard/folders and their permissions.
 type folderHelper struct {
-	dialect          migrator.Dialect
-	folderService    folder.Service
-	dashboardService dashboards.DashboardService
-	dashboardStore   dashboards.Store
+	info          InfoStore
+	dialect       migrator.Dialect
+	folderService folder.Service
 
 	folderPermissions    accesscontrol.FolderPermissionsService
 	dashboardPermissions accesscontrol.DashboardPermissionsService
@@ -64,11 +68,14 @@ type folderHelper struct {
 	folderPermissionCache    map[string][]accesscontrol.ResourcePermission // Folder UID -> Folder Permissions.
 }
 
-// getBackgroundUser returns a background user for the given orgID with permissions to execute migration-related tasks.
-func getBackgroundUser(orgID int64) *user.SignedInUser {
-	backgroundUser := accesscontrol.BackgroundUser("ngalert_migration", orgID, org.RoleAdmin, migratorPermissions).(*user.SignedInUser)
-	backgroundUser.UserID = FOLDER_CREATED_BY
-	return backgroundUser
+// getMigrationUser returns a background user for the given orgID with permissions to execute migration-related tasks.
+func getMigrationUser(orgID int64) identity.Requester {
+	return accesscontrol.BackgroundUser("ngalert_migration", orgID, org.RoleAdmin, migratorPermissions)
+}
+
+// getRevertUser returns a background user for the given orgID with permissions to delete folders during revert.
+func getRevertUser(orgID int64) identity.Requester {
+	return accesscontrol.BackgroundUser("ngalert_migration", orgID, org.RoleAdmin, revertPermissions)
 }
 
 // getOrCreateMigratedFolder returns the folder that alerts in a given dashboard should migrate to.
@@ -303,7 +310,7 @@ func (fh *folderHelper) getFolderPermissions(ctx context.Context, f *folder.Fold
 	if p, ok := fh.folderPermissionCache[f.UID]; ok {
 		return p, nil
 	}
-	p, err := fh.folderPermissions.GetPermissions(ctx, getBackgroundUser(f.OrgID), f.UID)
+	p, err := fh.folderPermissions.GetPermissions(ctx, getMigrationUser(f.OrgID), f.UID)
 	if err != nil {
 		return nil, err
 	}
@@ -316,7 +323,7 @@ func (fh *folderHelper) getDashboardPermissions(ctx context.Context, d *dashboar
 	if p, ok := fh.dashboardPermissionCache[d.UID]; ok {
 		return p, nil
 	}
-	p, err := fh.dashboardPermissions.GetPermissions(ctx, getBackgroundUser(d.OrgID), d.UID)
+	p, err := fh.dashboardPermissions.GetPermissions(ctx, getMigrationUser(d.OrgID), d.UID)
 	if err != nil {
 		return nil, err
 	}
@@ -340,7 +347,7 @@ func (fh *folderHelper) getFolder(ctx context.Context, dash *dashboards.Dashboar
 		return migratedFolder, err
 	}
 
-	f, err := fh.folderService.Get(ctx, &folder.GetFolderQuery{ID: &dash.FolderID, OrgID: dash.OrgID, SignedInUser: getBackgroundUser(dash.OrgID)})
+	f, err := fh.folderService.Get(ctx, &folder.GetFolderQuery{ID: &dash.FolderID, OrgID: dash.OrgID, SignedInUser: getMigrationUser(dash.OrgID)})
 	if err != nil {
 		if errors.Is(err, dashboards.ErrFolderNotFound) {
 			return nil, fmt.Errorf("folder with id %v not found", dash.FolderID)
@@ -357,7 +364,7 @@ func (fh *folderHelper) getOrCreateGeneralAlertingFolder(ctx context.Context, or
 	if fh.generalFolder != nil {
 		return fh.generalFolder, nil
 	}
-	f, err := fh.folderService.Get(ctx, &folder.GetFolderQuery{OrgID: orgID, Title: &generalAlertingFolderTitle, SignedInUser: getBackgroundUser(orgID)})
+	f, err := fh.folderService.Get(ctx, &folder.GetFolderQuery{OrgID: orgID, Title: &generalAlertingFolderTitle, SignedInUser: getMigrationUser(orgID)})
 	if err != nil {
 		if errors.Is(err, dashboards.ErrFolderNotFound) {
 			// create general alerting folder without permissions to mimic the general folder.
@@ -376,40 +383,21 @@ func (fh *folderHelper) getOrCreateGeneralAlertingFolder(ctx context.Context, or
 
 // createFolder creates a new folder with given permissions.
 func (fh *folderHelper) createFolder(ctx context.Context, orgID int64, title string, newPerms []accesscontrol.SetResourcePermissionCommand) (*folder.Folder, error) {
-	// We would like to track folders created through migration using the created_by field, however folderService.Create
-	// currently clobbers userIDs < -1. As a workaround, we create a folder in a more roundabout manner.
-	usr := getBackgroundUser(orgID)
-	dashFolder := dashboards.NewDashboardFolder(title)
-	dashFolder.OrgID = orgID
-	dashFolder.CreatedBy = usr.UserID
-	dashFolder.UpdatedBy = usr.UserID
-	dashFolder.UpdateSlug()
-
-	dto := &dashboards.SaveDashboardDTO{
-		Dashboard: dashFolder,
-		OrgID:     orgID,
-		User:      usr,
-	}
-
-	saveDashboardCmd, err := fh.dashboardService.BuildSaveDashboardCommand(ctx, dto, false, false)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build save command: %w", err)
-	}
-
-	// Workaround for negative user IDs being overwritten.
-	saveDashboardCmd.UserID = usr.UserID
-
-	dash, err := fh.dashboardStore.SaveDashboard(ctx, *saveDashboardCmd)
+	f, err := fh.folderService.Create(ctx, &folder.CreateFolderCommand{
+		OrgID:        orgID,
+		Title:        title,
+		SignedInUser: getMigrationUser(orgID).(*user.SignedInUser),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to save: %w", err)
 	}
 
 	if len(newPerms) > 0 {
-		_, err = fh.folderPermissions.SetPermissions(ctx, orgID, dash.UID, newPerms...)
+		_, err = fh.folderPermissions.SetPermissions(ctx, orgID, f.UID, newPerms...)
 		if err != nil {
 			return nil, fmt.Errorf("failed to set permissions: %w", err)
 		}
 	}
 
-	return dashboards.FromDashboard(dash), nil
+	return f, nil
 }

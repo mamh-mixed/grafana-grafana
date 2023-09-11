@@ -20,7 +20,7 @@ import (
 //nolint:gocyclo
 func transConditions(ctx context.Context, set dashAlertSettings, orgID int64, dsCacheService datasources.CacheService) (*condition, error) {
 	// TODO: needs a significant refactor to reduce complexity.
-	usr := getBackgroundUser(orgID)
+	usr := getMigrationUser(orgID)
 
 	refIDtoCondIdx := make(map[string][]int) // a map of original refIds to their corresponding condition index
 	for i, cond := range set.Conditions {

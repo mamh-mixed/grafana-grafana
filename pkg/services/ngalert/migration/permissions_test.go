@@ -84,8 +84,8 @@ func TestDashAlertPermissionMigration(t *testing.T) {
 	genCreatedFolder := func(t *testing.T, title string, mutators ...func(f *dashboards.Dashboard)) *dashboards.Dashboard {
 		d := createFolder(t, 1, 1, "") // Leave generated UID blank, so we don't compare.
 		d.Title = title
-		d.CreatedBy = FOLDER_CREATED_BY
-		d.UpdatedBy = FOLDER_CREATED_BY
+		d.CreatedBy = -1
+		d.UpdatedBy = -1
 		if len(mutators) > 0 {
 			for _, mutator := range mutators {
 				mutator(d)
@@ -672,7 +672,7 @@ func TestDashAlertPermissionMigration(t *testing.T) {
 						delete(r.Annotations, "__alertId__")
 
 						folder := getDashboard(t, x, orgId, r.NamespaceUID)
-						rperms, err := service.folderPermissions.GetPermissions(context.Background(), getBackgroundUser(orgId), folder.UID)
+						rperms, err := service.folderPermissions.GetPermissions(context.Background(), getMigrationUser(orgId), folder.UID)
 						require.NoError(t, err)
 
 						expected := tt.expected[i]

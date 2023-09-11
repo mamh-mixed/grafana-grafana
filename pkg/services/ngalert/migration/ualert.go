@@ -26,10 +26,6 @@ const DASHBOARD_FOLDER = "%s Alerts - %s"
 // MaxFolderName is the maximum length of the folder name generated using DASHBOARD_FOLDER format
 const MaxFolderName = 255
 
-// FOLDER_CREATED_BY us used to track folders created by this migration
-// during alert migration cleanup.
-const FOLDER_CREATED_BY = -8
-
 // It is defined in pkg/expr/service.go as "DatasourceType"
 const expressionDatasourceUID = "__expr__"
 
@@ -40,9 +36,9 @@ type migration struct {
 
 	seenUIDs deduplicator
 
+	info              InfoStore
 	store             db.DB
 	ruleStore         RuleStore
-	dashboardStore    dashboards.Store
 	alertingStore     AlertingStore
 	encryptionService secrets.Service
 	dashboardService  dashboards.DashboardService
@@ -56,9 +52,9 @@ type migration struct {
 func newMigration(
 	log log.Logger,
 	cfg *setting.Cfg,
+	info InfoStore,
 	store db.DB,
 	ruleStore RuleStore,
-	dashboardStore dashboards.Store,
 	alertingStore AlertingStore,
 	encryptionService secrets.Service,
 	dashboardService dashboards.DashboardService,
@@ -73,9 +69,9 @@ func newMigration(
 		log:                  log,
 		dialect:              store.GetDialect(),
 		cfg:                  cfg,
+		info:                 info,
 		store:                store,
 		ruleStore:            ruleStore,
-		dashboardStore:       dashboardStore,
 		alertingStore:        alertingStore,
 		encryptionService:    encryptionService,
 		dashboardService:     dashboardService,
@@ -112,10 +108,9 @@ func newOrgMigration(m *migration, orgID int64) *orgMigration {
 		dsCacheService: m.dsCacheService,
 
 		folderHelper: folderHelper{
+			info:                     m.info,
 			dialect:                  m.dialect,
 			folderService:            m.folderService,
-			dashboardService:         m.dashboardService,
-			dashboardStore:           m.dashboardStore,
 			folderPermissions:        m.folderPermissions,
 			dashboardPermissions:     m.dashboardPermissions,
 			permissionsMap:           make(map[int64]map[permissionHash]*folder.Folder),
@@ -171,12 +166,22 @@ func (m *migration) Exec(ctx context.Context) error {
 		}
 	}
 
+	orgFolderUids := make(map[int64][]string)
 	for _, om := range migrationsCache {
 		if len(om.silences) > 0 {
 			if err := om.writeSilencesFile(); err != nil {
 				m.log.Error("Alert migration error: failed to write silence file", "err", err)
 			}
 		}
+		folderUids := make([]string, 0, len(om.folderHelper.newFolderCache))
+		for _, f := range om.folderHelper.newFolderCache {
+			folderUids = append(folderUids, f.UID)
+		}
+		orgFolderUids[om.orgID] = folderUids
+	}
+	err = m.info.setCreatedFolders(ctx, orgFolderUids)
+	if err != nil {
+		return err
 	}
 
 	amConfigPerOrg, err := m.setupAlertmanagerConfigs(ctx, rulesPerOrg)

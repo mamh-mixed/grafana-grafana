@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/grafana/grafana/pkg/infra/db"
@@ -19,14 +18,9 @@ import (
 	"github.com/grafana/grafana/pkg/services/ngalert/notifier"
 	"github.com/grafana/grafana/pkg/services/ngalert/store"
 	"github.com/grafana/grafana/pkg/services/secrets"
+	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/grafana/grafana/pkg/setting"
 )
-
-// KVNamespace is the kvstore namespace used for the migration status.
-const KVNamespace = "ngalert.migration"
-
-// migratedKey is the kvstore key used for the migration status.
-const migratedKey = "migrated"
 
 // actionName is the unique row-level lock name for serverlock.ServerLockService.
 const actionName = "alerting migration"
@@ -39,9 +33,8 @@ type MigrationService struct {
 	store                db.DB
 	cfg                  *setting.Cfg
 	log                  log.Logger
-	kv                   *kvstore.NamespacedKVStore
+	info                 InfoStore
 	ruleStore            RuleStore
-	dashboardStore       dashboards.Store
 	alertingStore        AlertingStore
 	encryptionService    secrets.Service
 	dashboardService     dashboards.DashboardService
@@ -57,7 +50,6 @@ func ProvideService(
 	sqlStore db.DB,
 	kv kvstore.KVStore,
 	ruleStore *store.DBstore,
-	dashboardStore dashboards.Store,
 	encryptionService secrets.Service,
 	dashboardService dashboards.DashboardService,
 	folderService folder.Service,
@@ -70,9 +62,8 @@ func ProvideService(
 		log:                  log.New("ngalert.migration"),
 		cfg:                  cfg,
 		store:                sqlStore,
-		kv:                   kvstore.WithNamespace(kv, 0, KVNamespace),
+		info:                 InfoStore{kv: kvstore.WithNamespace(kv, 0, KVNamespace)},
 		ruleStore:            ruleStore,
-		dashboardStore:       dashboardStore,
 		alertingStore:        ruleStore,
 		encryptionService:    encryptionService,
 		dashboardService:     dashboardService,
@@ -91,7 +82,7 @@ func (ms *MigrationService) Run(ctx context.Context) error {
 	errLock := ms.lock.LockExecuteAndRelease(ctx, actionName, time.Minute*10, func(context.Context) {
 		ms.log.Info("Starting")
 		errMigration = ms.store.InTransaction(ctx, func(ctx context.Context) error {
-			migrated, err := ms.GetMigrated(ctx)
+			migrated, err := ms.info.IsMigrated(ctx)
 			if err != nil {
 				return fmt.Errorf("getting migration status: %w", err)
 			}
@@ -126,9 +117,9 @@ func (ms *MigrationService) Run(ctx context.Context) error {
 			mg := newMigration(
 				ms.log,
 				ms.cfg,
+				ms.info,
 				ms.store,
 				ms.ruleStore,
-				ms.dashboardStore,
 				ms.alertingStore,
 				ms.encryptionService,
 				ms.dashboardService,
@@ -143,7 +134,7 @@ func (ms *MigrationService) Run(ctx context.Context) error {
 				return fmt.Errorf("executing migration: %w", err)
 			}
 
-			err = ms.SetMigrated(ctx, true)
+			err = ms.info.setMigrated(ctx, true)
 			if err != nil {
 				return fmt.Errorf("setting migration status: %w", err)
 			}
@@ -167,27 +158,8 @@ func (ms *MigrationService) IsDisabled() bool {
 	return ms.cfg == nil
 }
 
-// GetMigrated returns the migration status from the kvstore.
-func (ms *MigrationService) GetMigrated(ctx context.Context) (bool, error) {
-	content, exists, err := ms.kv.Get(ctx, migratedKey)
-	if err != nil {
-		return false, err
-	}
-
-	if !exists {
-		return false, nil
-	}
-
-	return strconv.ParseBool(content)
-}
-
-// SetMigrated sets the migration status in the kvstore.
-func (ms *MigrationService) SetMigrated(ctx context.Context, migrated bool) error {
-	return ms.kv.Set(ctx, migratedKey, strconv.FormatBool(migrated))
-}
-
 // Revert reverts the migration, deleting all unified alerting resources such as alert rules, alertmanager configurations, and silence files.
-// In addition, it will delete all folder and permissions originally created by this migration, these are marked by the FOLDER_CREATED_BY constant.
+// In addition, it will delete all folders and permissions originally created by this migration, these are stored in the kvstore.
 func (ms *MigrationService) Revert(ctx context.Context) error {
 	return ms.store.WithTransactionalDbSession(ctx, func(sess *db.Session) error {
 		_, err := sess.Exec("delete from alert_rule")
@@ -200,18 +172,23 @@ func (ms *MigrationService) Revert(ctx context.Context) error {
 			return err
 		}
 
-		var results []struct {
-			ID    int64 `xorm:"id"`
-			OrgID int64 `xorm:"org_id"`
-		}
-		if err := sess.SQL("select id from dashboard where created_by = ?", FOLDER_CREATED_BY).Find(&results); err != nil {
+		createdFolders, err := ms.info.GetCreatedFolders(ctx)
+		if err != nil {
 			return err
 		}
+		for orgId, folderUIDs := range createdFolders {
+			usr := getRevertUser(orgId)
 
-		for _, result := range results {
-			err := ms.dashboardService.DeleteDashboard(ctx, result.ID, result.OrgID) // Also handles permissions and other related entities.
-			if err != nil {
-				return err
+			for _, folderUID := range folderUIDs {
+				cmd := folder.DeleteFolderCommand{
+					UID:          folderUID,
+					OrgID:        orgId,
+					SignedInUser: usr.(*user.SignedInUser),
+				}
+				err := ms.folderService.Delete(ctx, &cmd) // Also handles permissions and other related entities.
+				if err != nil {
+					return err
+				}
 			}
 		}
 
@@ -240,6 +217,11 @@ func (ms *MigrationService) Revert(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
+
+			_, err = sess.Exec("delete from kv_store where namespace = ?", KVNamespace)
+			if err != nil {
+				return err
+			}
 		}
 
 		files, err := filepath.Glob(filepath.Join(ms.cfg.DataPath, "alerting", "*", "silences"))
@@ -252,7 +234,7 @@ func (ms *MigrationService) Revert(ctx context.Context) error {
 			}
 		}
 
-		err = ms.SetMigrated(ctx, false)
+		err = ms.info.setMigrated(ctx, false)
 		if err != nil {
 			return fmt.Errorf("setting migration status: %w", err)
 		}

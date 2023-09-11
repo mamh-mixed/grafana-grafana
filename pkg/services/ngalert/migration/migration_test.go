@@ -120,7 +120,7 @@ func TestServiceStart(t *testing.T) {
 			ctx := context.Background()
 			service := NewMigrationService(t, sqlStore, tt.config)
 
-			err := service.SetMigrated(ctx, tt.isMigrationRun)
+			err := service.info.setMigrated(ctx, tt.isMigrationRun)
 			require.NoError(t, err)
 
 			err = service.Run(ctx)
@@ -130,7 +130,7 @@ func TestServiceStart(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			migrated, err := service.GetMigrated(ctx)
+			migrated, err := service.info.IsMigrated(ctx)
 			require.NoError(t, err)
 			require.Equal(t, tt.expected, migrated)
 		})
@@ -1334,7 +1334,12 @@ func getDashboard(t *testing.T, x *xorm.Engine, orgId int64, uid string) *dashbo
 	dashes := make([]*dashboards.Dashboard, 0)
 	err := x.Table("dashboard").Where("org_id = ? AND uid = ?", orgId, uid).Find(&dashes)
 	require.NoError(t, err)
-	require.Len(t, dashes, 1)
+	if len(dashes) > 1 {
+		t.Error("Expected only one dashboard to be returned")
+	}
+	if len(dashes) == 0 {
+		return nil
+	}
 
 	return dashes[0]
 }
@@ -1386,7 +1391,6 @@ func NewMigrationService(t *testing.T, sqlStore *sqlstore.SQLStore, cfg *setting
 		sqlStore,
 		fakes.NewFakeKVStore(t),
 		&alertingStore,
-		dashboardStore,
 		fake_secrets.NewFakeSecretsService(),
 		dashboardService,
 		folderService,

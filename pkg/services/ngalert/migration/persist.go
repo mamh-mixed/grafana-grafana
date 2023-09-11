@@ -4,10 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 
+	"github.com/grafana/grafana/pkg/infra/kvstore"
 	apimodels "github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
 	"github.com/grafana/grafana/pkg/services/ngalert/models"
 )
+
+// KVNamespace is the kvstore namespace used for the migration status.
+const KVNamespace = "ngalert.migration"
+
+// migratedKey is the kvstore key used for the migration status.
+const migratedKey = "migrated"
+
+// createdFoldersKey is the kvstore key used for the list of created folder UIDs.
+const createdFoldersKey = "createdFolders"
 
 // RuleStore represents the ability to persist and query alert rules.
 type RuleStore interface {
@@ -50,4 +61,57 @@ func (m *migration) writeAlertmanagerConfig(ctx context.Context, orgID int64, am
 		LastApplied:               0,
 	}
 	return m.alertingStore.SaveAlertmanagerConfiguration(ctx, &cmd)
+}
+
+type InfoStore struct {
+	kv *kvstore.NamespacedKVStore
+}
+
+// IsMigrated returns the migration status from the kvstore.
+func (ms *InfoStore) IsMigrated(ctx context.Context) (bool, error) {
+	content, exists, err := ms.kv.Get(ctx, migratedKey)
+	if err != nil {
+		return false, err
+	}
+
+	if !exists {
+		return false, nil
+	}
+
+	return strconv.ParseBool(content)
+}
+
+// setMigrated sets the migration status in the kvstore.
+func (ms *InfoStore) setMigrated(ctx context.Context, migrated bool) error {
+	return ms.kv.Set(ctx, migratedKey, strconv.FormatBool(migrated))
+}
+
+// GetCreatedFolders returns a map of orgID to list of folder UIDs that were created by the migration from the kvstore.
+func (ms *InfoStore) GetCreatedFolders(ctx context.Context) (map[int64][]string, error) {
+	content, exists, err := ms.kv.Get(ctx, createdFoldersKey)
+	if err != nil {
+		return nil, err
+	}
+
+	if !exists {
+		return make(map[int64][]string), nil
+	}
+
+	var folderUids map[int64][]string
+	err = json.Unmarshal([]byte(content), &folderUids)
+	if err != nil {
+		return nil, err
+	}
+
+	return folderUids, nil
+}
+
+// setCreatedFolders sets the map of orgID to list of folder UIDs that were created by the migration in the kvstore.
+func (ms *InfoStore) setCreatedFolders(ctx context.Context, folderUids map[int64][]string) error {
+	raw, err := json.Marshal(folderUids)
+	if err != nil {
+		return err
+	}
+
+	return ms.kv.Set(ctx, createdFoldersKey, string(raw))
 }
