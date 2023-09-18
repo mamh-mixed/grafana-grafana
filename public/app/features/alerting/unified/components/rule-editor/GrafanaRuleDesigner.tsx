@@ -8,7 +8,7 @@ import { AppChromeUpdate } from '../../../../../core/components/AppChrome/AppChr
 import { RuleFormValues } from '../../types/rule-form';
 import { MINUTE } from '../../utils/rule-form';
 import { GrafanaExportDrawer } from '../export/GrafanaExportDrawer';
-import { RuleExportFormats } from '../export/providers';
+import { allGrafanaExportProviders, ExportFormats } from '../export/providers';
 
 import { AlertRuleNameInput } from './AlertRuleNameInput';
 import AnnotationsStep from './AnnotationsStep';
@@ -35,6 +35,7 @@ export function GrafanaRuleDesigner({ ruleForm, alertUid }: GrafanaRuleDesignerF
   const [showExporter, setShowExporter] = useState<RuleDesignExportMode | undefined>(undefined);
 
   const [conditionErrorMsg, setConditionErrorMsg] = useState('');
+  console.log('conditionErrorMsg', conditionErrorMsg);
   const [evaluateEvery, setEvaluateEvery] = useState(ruleForm?.evaluateEvery ?? MINUTE);
 
   const checkAlertCondition = (msg = '') => {
@@ -96,11 +97,17 @@ interface GrafanaRuleDesignExporterProps {
 }
 
 export const GrafanaRuleDesignExporter = ({ onClose, exportMode }: GrafanaRuleDesignExporterProps) => {
-  const [activeTab, setActiveTab] = useState<RuleExportFormats>('yaml');
+  const [activeTab, setActiveTab] = useState<ExportFormats>('yaml');
   const title = exportMode === 'rule' ? 'Export Rule' : 'Export Group';
 
   return (
-    <GrafanaExportDrawer title={title} activeTab={activeTab} onTabChange={setActiveTab} onClose={onClose}>
+    <GrafanaExportDrawer
+      title={title}
+      activeTab={activeTab}
+      onTabChange={setActiveTab}
+      onClose={onClose}
+      formatProviders={Object.values(allGrafanaExportProviders)}
+    >
       TODO
     </GrafanaExportDrawer>
   );

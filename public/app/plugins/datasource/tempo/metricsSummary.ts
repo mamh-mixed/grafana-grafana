@@ -158,6 +158,7 @@ export const getConfigQuery = (series: Series[], targetQuery: string) => {
 const getConfig = (series: Series, query: string, instanceSettings: DataSourceInstanceSettings) => {
   const commonConfig = {
     displayNameFromDS: series.key,
+    noValue: '<no value>',
     links: [
       {
         title: 'Query in explore',
