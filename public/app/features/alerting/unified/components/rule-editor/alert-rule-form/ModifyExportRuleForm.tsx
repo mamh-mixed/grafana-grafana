@@ -4,24 +4,23 @@ import { FormProvider, useForm } from 'react-hook-form';
 import { Stack } from '@grafana/experimental';
 import { Button, CustomScrollbar } from '@grafana/ui';
 
-import { AppChromeUpdate } from '../../../../../core/components/AppChrome/AppChromeUpdate';
-import { RuleFormValues } from '../../types/rule-form';
-import { MINUTE } from '../../utils/rule-form';
-import { GrafanaExportDrawer } from '../export/GrafanaExportDrawer';
-import { allGrafanaExportProviders, ExportFormats } from '../export/providers';
-
-import { AlertRuleNameInput } from './AlertRuleNameInput';
-import AnnotationsStep from './AnnotationsStep';
-import { GrafanaEvaluationBehavior } from './GrafanaEvaluationBehavior';
-import { NotificationsStep } from './NotificationsStep';
-import { QueryAndExpressionsStep } from './query-and-alert-condition/QueryAndExpressionsStep';
+import { AppChromeUpdate } from '../../../../../../core/components/AppChrome/AppChromeUpdate';
+import { RuleFormValues } from '../../../types/rule-form';
+import { MINUTE } from '../../../utils/rule-form';
+import { GrafanaExportDrawer } from '../../export/GrafanaExportDrawer';
+import { allGrafanaExportProviders, ExportFormats } from '../../export/providers';
+import { AlertRuleNameInput } from '../AlertRuleNameInput';
+import AnnotationsStep from '../AnnotationsStep';
+import { GrafanaEvaluationBehavior } from '../GrafanaEvaluationBehavior';
+import { NotificationsStep } from '../NotificationsStep';
+import { QueryAndExpressionsStep } from '../query-and-alert-condition/QueryAndExpressionsStep';
 
 interface ModifyExportRuleFormProps {
   alertUid?: string;
   ruleForm?: RuleFormValues;
 }
 
-type RuleDesignExportMode = 'rule' | 'group';
+type ModifyExportMode = 'rule' | 'group';
 
 export function ModifyExportRuleForm({ ruleForm, alertUid }: ModifyExportRuleFormProps) {
   const formAPI = useForm<RuleFormValues>({
@@ -32,7 +31,7 @@ export function ModifyExportRuleForm({ ruleForm, alertUid }: ModifyExportRuleFor
 
   const existing = Boolean(ruleForm);
 
-  const [showExporter, setShowExporter] = useState<RuleDesignExportMode | undefined>(undefined);
+  const [showExporter, setShowExporter] = useState<ModifyExportMode | undefined>(undefined);
 
   const [conditionErrorMsg, setConditionErrorMsg] = useState('');
   console.log('conditionErrorMsg', conditionErrorMsg);
@@ -93,7 +92,7 @@ export function ModifyExportRuleForm({ ruleForm, alertUid }: ModifyExportRuleFor
 
 interface GrafanaRuleDesignExporterProps {
   onClose: () => void;
-  exportMode: RuleDesignExportMode;
+  exportMode: ModifyExportMode;
 }
 
 export const GrafanaRuleDesignExporter = ({ onClose, exportMode }: GrafanaRuleDesignExporterProps) => {
