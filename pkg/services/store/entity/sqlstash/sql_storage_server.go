@@ -8,53 +8,47 @@ import (
 	"strings"
 	"time"
 
+	"xorm.io/xorm"
+
 	"github.com/grafana/grafana/pkg/infra/appcontext"
 	"github.com/grafana/grafana/pkg/infra/grn"
 	"github.com/grafana/grafana/pkg/infra/log"
-	"github.com/grafana/grafana/pkg/services/featuremgmt"
-	"github.com/grafana/grafana/pkg/services/grpcserver"
 	"github.com/grafana/grafana/pkg/services/sqlstore/migrator"
 	"github.com/grafana/grafana/pkg/services/sqlstore/session"
 	"github.com/grafana/grafana/pkg/services/store"
 	"github.com/grafana/grafana/pkg/services/store/entity"
-	entityDB "github.com/grafana/grafana/pkg/services/store/entity/db"
-	"github.com/grafana/grafana/pkg/services/store/entity/migrations"
-	"github.com/grafana/grafana/pkg/services/store/kind"
-	"github.com/grafana/grafana/pkg/services/store/resolver"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/oklog/ulid/v2"
 )
+
+type EntityDB interface {
+	GetSession() *session.SessionDB
+	GetEngine() *xorm.Engine
+	GetCfg() *setting.Cfg
+}
 
 // Make sure we implement both store + admin
 var _ entity.EntityStoreServer = &sqlEntityServer{}
 var _ entity.EntityStoreAdminServer = &sqlEntityServer{}
 
-func ProvideSQLEntityServer(db entityDB.EntityDB, cfg *setting.Cfg, grpcServerProvider grpcserver.Provider, kinds kind.KindRegistry, resolver resolver.EntityReferenceResolver, features featuremgmt.FeatureToggles) (entity.EntityStoreServer, error) {
+func ProvideSQLEntityServer(db EntityDB /*, cfg *setting.Cfg, grpcServerProvider grpcserver.Provider*/) (entity.EntityStoreServer, error) {
 	entityServer := &sqlEntityServer{
-		db:       db,
-		sess:     db.GetSession(),
-		dialect:  migrator.NewDialect(db.GetEngine().DriverName()),
-		log:      log.New("sql-entity-server"),
-		kinds:    kinds,
-		resolver: resolver,
+		db:      db,
+		sess:    db.GetSession(),
+		dialect: migrator.NewDialect(db.GetEngine().DriverName()),
+		log:     log.New("sql-entity-server"),
 	}
 
-	entity.RegisterEntityStoreServer(grpcServerProvider.GetServer(), entityServer)
-
-	if err := migrations.MigrateEntityStore(db, features); err != nil {
-		return nil, err
-	}
+	// entity.RegisterEntityStoreServer(grpcServerProvider.GetServer(), entityServer)
 
 	return entityServer, nil
 }
 
 type sqlEntityServer struct {
-	log      log.Logger
-	db       entityDB.EntityDB // needed to keep xorm engine in scope
-	sess     *session.SessionDB
-	dialect  migrator.Dialect
-	kinds    kind.KindRegistry
-	resolver resolver.EntityReferenceResolver
+	log     log.Logger
+	db      EntityDB // needed to keep xorm engine in scope
+	sess    *session.SessionDB
+	dialect migrator.Dialect
 }
 
 func (s *sqlEntityServer) getReadSelect(r *entity.ReadEntityRequest) string {

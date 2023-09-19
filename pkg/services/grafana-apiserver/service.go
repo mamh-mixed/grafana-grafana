@@ -93,6 +93,8 @@ type service struct {
 	etcd_servers []string
 
 	enabled   bool
+	cfg       *setting.Cfg
+	features  featuremgmt.FeatureToggles
 	dataPath  string
 	stopCh    chan struct{}
 	stoppedCh chan error
@@ -106,12 +108,15 @@ type service struct {
 
 func ProvideService(
 	cfg *setting.Cfg,
+	features featuremgmt.FeatureToggles,
 	rr routing.RouteRegister,
 	authz authorizer.Authorizer,
 ) (*service, error) {
 	s := &service{
 		etcd_servers: cfg.SectionWithEnvOverrides("grafana-apiserver").Key("etcd_servers").Strings(","),
 		enabled:      cfg.IsFeatureToggleEnabled(featuremgmt.FlagGrafanaAPIServer),
+		cfg:          cfg,
+		features:     features,
 		rr:           rr,
 		dataPath:     path.Join(cfg.DataPath, "k8s"),
 		stopCh:       make(chan struct{}),
@@ -218,6 +223,10 @@ func (s *service) start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	// serverConfig.ExtraConfig.RESTOptionsGetter = NewRESTOptionsGetter(s.cfg, s.features, unstructured.UnstructuredJSONScheme)
+	// serverConfig.GenericConfig.RESTOptionsGetter = NewRESTOptionsGetter(s.cfg, s.features, grafanaapiserver.Codecs.LegacyCodec(kindsv1.SchemeGroupVersion))
+	// serverConfig.GenericConfig.Config.RESTOptionsGetter = NewRESTOptionsGetter(s.cfg, s.features, grafanaapiserver.Codecs.LegacyCodec(kindsv1.SchemeGroupVersion))
 
 	authenticator, err := newAuthenticator(rootCert)
 	if err != nil {

@@ -5,17 +5,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grafana/grafana/pkg/infra/db"
-	"github.com/grafana/grafana/pkg/infra/log"
-	"github.com/grafana/grafana/pkg/services/sqlstore"
-	"github.com/grafana/grafana/pkg/services/sqlstore/session"
-	"github.com/grafana/grafana/pkg/setting"
-	"github.com/grafana/grafana/pkg/util"
 	"github.com/jmoiron/sqlx"
 	"xorm.io/xorm"
+
+	"github.com/grafana/grafana/pkg/infra/db"
+	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/services/featuremgmt"
+	"github.com/grafana/grafana/pkg/services/sqlstore"
+	"github.com/grafana/grafana/pkg/services/sqlstore/session"
+	"github.com/grafana/grafana/pkg/services/store/entity/migrations"
+	"github.com/grafana/grafana/pkg/services/store/entity/sqlstash"
+	"github.com/grafana/grafana/pkg/setting"
+	"github.com/grafana/grafana/pkg/util"
 )
 
-func ProvideEntityDB(db db.DB, cfg *setting.Cfg) (EntityDB, error) {
+var _ sqlstash.EntityDB = (*EntityDB)(nil)
+
+func ProvideEntityDB(db db.DB, cfg *setting.Cfg, features featuremgmt.FeatureToggles) (*EntityDB, error) {
 	var engine *xorm.Engine
 	var err error
 
@@ -87,36 +93,38 @@ func ProvideEntityDB(db db.DB, cfg *setting.Cfg) (EntityDB, error) {
 			engine.ShowExecTime(true)
 		}
 	} else {
+		if db == nil {
+			return nil, fmt.Errorf("no db connection provided")
+		}
+
 		engine = db.GetEngine()
 	}
 
-	eDB := &entityDB{
+	eDB := &EntityDB{
 		cfg:    cfg,
 		engine: engine,
+	}
+
+	if err := migrations.MigrateEntityStore(eDB, features); err != nil {
+		return nil, err
 	}
 
 	return eDB, nil
 }
 
-type EntityDB interface {
-	GetSession() *session.SessionDB
-	GetEngine() *xorm.Engine
-	GetCfg() *setting.Cfg
-}
-
-type entityDB struct {
+type EntityDB struct {
 	engine *xorm.Engine
 	cfg    *setting.Cfg
 }
 
-func (db entityDB) GetSession() *session.SessionDB {
+func (db EntityDB) GetSession() *session.SessionDB {
 	return session.GetSession(sqlx.NewDb(db.engine.DB().DB, db.engine.DriverName()))
 }
 
-func (db entityDB) GetEngine() *xorm.Engine {
+func (db EntityDB) GetEngine() *xorm.Engine {
 	return db.engine
 }
 
-func (db entityDB) GetCfg() *setting.Cfg {
+func (db EntityDB) GetCfg() *setting.Cfg {
 	return db.cfg
 }

@@ -339,6 +339,7 @@ var wireBasicSet = wire.NewSet(
 	interceptors.ProvideAuthenticator,
 	kind.ProvideService, // The registry of known kinds
 	entityDB.ProvideEntityDB,
+	wire.Bind(new(sqlstash.EntityDB), new(*entityDB.EntityDB)),
 	sqlstash.ProvideSQLEntityServer,
 	resolver.ProvideEntityReferenceResolver,
 	httpentitystore.ProvideHTTPEntityStore,

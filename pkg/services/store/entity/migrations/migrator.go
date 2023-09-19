@@ -7,11 +7,12 @@ import (
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/sqlstore/migrator"
 	"github.com/grafana/grafana/pkg/services/sqlstore/session"
-	entityDB "github.com/grafana/grafana/pkg/services/store/entity/db"
+	"github.com/grafana/grafana/pkg/services/store/entity/sqlstash"
+
 	"github.com/grafana/grafana/pkg/setting"
 )
 
-func MigrateEntityStore(db entityDB.EntityDB, features featuremgmt.FeatureToggles) error {
+func MigrateEntityStore(db sqlstash.EntityDB, features featuremgmt.FeatureToggles) error {
 	// Skip if feature flag is not enabled
 	if !features.IsEnabled(featuremgmt.FlagEntityStore) {
 		return nil
