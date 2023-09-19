@@ -134,14 +134,9 @@ Experimental features might be changed or removed without prior notice.
 | `dashgpt`                                   | Enable AI powered features in dashboards                                                                     |
 | `sseGroupByDatasource`                      | Send query to the same datasource in a single request when using server side expressions                     |
 | `requestInstrumentationStatusSource`        | Include a status source label for request metrics and logs                                                   |
-
-<<<<<<< HEAD
-| `alertingModifiedExport` | Enables using UI for provisioned rules modification and export |
-=======
-| `wargamesTesting` | Placeholder feature flag for internal testing |
-| `alertingInsights` | Show the new alerting insights landing page |
-
-> > > > > > > origin/main
+| `wargamesTesting`                           | Placeholder feature flag for internal testing                                                                |
+| `alertingInsights`                          | Show the new alerting insights landing page                                                                  |
+| `alertingModifiedExport`                    | Enables using UI for provisioned rules modification and export                                               |
 
 ## Development feature toggles
 
