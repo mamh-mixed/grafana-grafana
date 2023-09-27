@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"github.com/grafana/grafana/pkg/util"
 )
 
 func TestEncode(t *testing.T) {
@@ -14,8 +16,9 @@ func TestEncode(t *testing.T) {
 		Bool      bool     `hcl:"bul"`
 		BoolRef   *bool    `hcl:"bulRef"`
 		Ignored   string
-		Blocks    []data `hcl:"blocks,block"`
-		SubData   *data  `hcl:"sub,block"`
+		Blocks    []data             `hcl:"blocks,block"`
+		SubData   *data              `hcl:"sub,block"`
+		Map       *map[string]string `hcl:"map_data"`
 	}
 
 	encoded, err := Encode(Resource{
@@ -24,9 +27,9 @@ func TestEncode(t *testing.T) {
 		Body: &data{
 			Name:      "test",
 			Number:    123,
-			NumberRef: func(f float64) *float64 { return &f }(1333),
+			NumberRef: util.Pointer(1333.0),
 			Bool:      false,
-			BoolRef:   func(f bool) *bool { return &f }(true),
+			BoolRef:   util.Pointer(true),
 			Ignored:   "Ignore me",
 			Blocks: []data{
 				{
@@ -43,6 +46,10 @@ func TestEncode(t *testing.T) {
 				Name:   "sub-data",
 				Number: 123123,
 			},
+			Map: util.Pointer(map[string]string{
+				"test":  "data",
+				"test2": "data1",
+			}),
 		},
 	})
 	require.NoError(t, err)
@@ -69,6 +76,11 @@ func TestEncode(t *testing.T) {
     name   = "sub-data"
     number = 123123
     bul    = false
+  }
+
+  map_data = {
+    test  = "data"
+    test2 = "data1"
   }
 }
 `, string(encoded))
