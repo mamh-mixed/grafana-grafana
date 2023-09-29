@@ -2,13 +2,19 @@ package definitions
 
 type Secret string
 
+type IntegrationBase struct {
+	DisableResolveMessage *bool `json:"disableResolveMessage" yaml:"disableResolveMessage" hcl:"disable_resolve_message"`
+}
+
 type AlertmanagerIntegration struct {
+	IntegrationBase
 	URL      string  `json:"url" yaml:"url" hcl:"url"`
 	User     *string `json:"basicAuthUser,omitempty" yaml:"basicAuthUser,omitempty" hcl:"basic_auth_user"`
 	Password *Secret `json:"basicAuthPassword,omitempty" yaml:"basicAuthPassword,omitempty" hcl:"basic_auth_password"`
 }
 
-type DingDingIntegration struct {
+type DingdingIntegration struct {
+	IntegrationBase
 	URL         string  `json:"url,omitempty" yaml:"url,omitempty" hcl:"url"`
 	MessageType *string `json:"msgType,omitempty" yaml:"msgType,omitempty" hcl:"message_type"`
 	Title       *string `json:"title,omitempty" yaml:"title,omitempty" hcl:"title"`
@@ -16,6 +22,7 @@ type DingDingIntegration struct {
 }
 
 type DiscordIntegration struct {
+	IntegrationBase
 	WebhookURL         Secret  `json:"url" yaml:"url" hcl:"url"`
 	Title              *string `json:"title,omitempty" yaml:"title,omitempty" hcl:"title"`
 	Message            *string `json:"message,omitempty" yaml:"message,omitempty" hcl:"message"`
@@ -24,6 +31,7 @@ type DiscordIntegration struct {
 }
 
 type EmailIntegration struct {
+	IntegrationBase
 	Addresses []string `json:"addresses" yaml:"addresses" hcl:"addresses"`
 
 	SingleEmail *bool   `json:"singleEmail,omitempty" yaml:"singleEmail,omitempty" hcl:"single_email"`
@@ -31,7 +39,8 @@ type EmailIntegration struct {
 	Subject     *string `json:"subject,omitempty" yaml:"subject,omitempty" hcl:"subject"`
 }
 
-type GoogleChatIntegration struct {
+type GooglechatIntegration struct {
+	IntegrationBase
 	URL string `json:"url" yaml:"url" hcl:"url"`
 
 	Title   *string `json:"title,omitempty" yaml:"title,omitempty" hcl:"title"`
@@ -39,6 +48,7 @@ type GoogleChatIntegration struct {
 }
 
 type KafkaIntegration struct {
+	IntegrationBase
 	Endpoint Secret `json:"kafkaRestProxy" yaml:"kafkaRestProxy" hcl:"rest_proxy_url"`
 	Topic    string `json:"kafkaTopic" yaml:"kafkaTopic" hcl:"topic"`
 
@@ -51,6 +61,7 @@ type KafkaIntegration struct {
 }
 
 type LineIntegration struct {
+	IntegrationBase
 	Token Secret `json:"token" yaml:"token" hcl:"token"`
 
 	Title       *string `json:"title,omitempty" yaml:"title,omitempty" hcl:"title"`
@@ -58,6 +69,7 @@ type LineIntegration struct {
 }
 
 type OnCallIntegration struct {
+	IntegrationBase
 	URL string `json:"url" yaml:"url" hcl:"url"`
 
 	HTTPMethod               *string `json:"httpMethod,omitempty" yaml:"httpMethod,omitempty" hcl:"http_method"`
@@ -70,7 +82,8 @@ type OnCallIntegration struct {
 	Message                  *string `json:"message,omitempty" yaml:"message,omitempty" hcl:"message"`
 }
 
-type OpsGenieIntegration struct {
+type OpsgenieIntegration struct {
+	IntegrationBase
 	APIKey Secret `json:"apiKey" yaml:"apiKey" hcl:"api_key"`
 
 	APIUrl           *string `json:"apiUrl,omitempty" yaml:"apiUrl,omitempty" hcl:"url"`
@@ -81,7 +94,8 @@ type OpsGenieIntegration struct {
 	SendTagsAs       *string `json:"sendTagsAs,omitempty" yaml:"sendTagsAs,omitempty" hcl:"send_tags_as"`
 }
 
-type PagerDutyIntegration struct {
+type PagerdutyIntegration struct {
+	IntegrationBase
 	Key Secret `json:"integrationKey" yaml:"integrationKey" hcl:"integration_key"`
 
 	Severity  *string            `json:"severity,omitempty" yaml:"severity,omitempty" hcl:"severity"`
@@ -96,6 +110,7 @@ type PagerDutyIntegration struct {
 }
 
 type PushoverIntegration struct {
+	IntegrationBase
 	UserKey  Secret `json:"userKey" yaml:"userKey" hcl:"user_key"`
 	APIToken Secret `json:"apiToken" yaml:"apiToken" hcl:"api_token"`
 
@@ -110,7 +125,8 @@ type PushoverIntegration struct {
 	Message          *string `json:"message,omitempty" yaml:"message,omitempty" hcl:"message"`
 }
 
-type SensuGoIntegration struct {
+type SensugoIntegration struct {
+	IntegrationBase
 	URL    string `json:"url" yaml:"url" hcl:"url"`
 	APIKey Secret `json:"apikey" yaml:"apikey" hcl:"api_key"`
 
@@ -122,6 +138,7 @@ type SensuGoIntegration struct {
 }
 
 type SlackIntegration struct {
+	IntegrationBase
 	EndpointURL    *string `json:"endpointUrl,omitempty" yaml:"endpointUrl,omitempty" hcl:"endpoint_url"`
 	URL            *Secret `json:"url,omitempty" yaml:"url,omitempty" hcl:"url"`
 	Token          *Secret `json:"token,omitempty" yaml:"token,omitempty" hcl:"token"`
@@ -137,6 +154,7 @@ type SlackIntegration struct {
 }
 
 type TelegramIntegration struct {
+	IntegrationBase
 	BotToken Secret `json:"bottoken" yaml:"bottoken" hcl:"token"`
 	ChatID   string `json:"chatid,omitempty" yaml:"chatid,omitempty" hcl:"chat_id"`
 
@@ -148,6 +166,7 @@ type TelegramIntegration struct {
 }
 
 type TeamsIntegration struct {
+	IntegrationBase
 	URL Secret `json:"url,omitempty" yaml:"url,omitempty" hcl:"url"`
 
 	Message      *string `json:"message,omitempty" yaml:"message,omitempty" hcl:"message"`
@@ -156,6 +175,7 @@ type TeamsIntegration struct {
 }
 
 type ThreemaIntegration struct {
+	IntegrationBase
 	GatewayID   string `json:"gateway_id" yaml:"gateway_id" hcl:"gateway_id"`
 	RecipientID string `json:"recipient_id" yaml:"recipient_id" hcl:"recipient_id"`
 	APISecret   Secret `json:"api_secret" yaml:"api_secret" hcl:"api_secret"`
@@ -164,7 +184,8 @@ type ThreemaIntegration struct {
 	Description *string `json:"description,omitempty" yaml:"description,omitempty" hcl:"description"`
 }
 
-type VictorOpsIntegration struct {
+type VictoropsIntegration struct {
+	IntegrationBase
 	URL string `json:"url" yaml:"url" hcl:"url"`
 
 	MessageType *string `json:"messageType,omitempty" yaml:"messageType,omitempty" hcl:"message_type"`
@@ -173,6 +194,7 @@ type VictorOpsIntegration struct {
 }
 
 type WebexIntegration struct {
+	IntegrationBase
 	Token Secret `json:"bot_token" yaml:"bot_token" hcl:"token"`
 
 	APIURL  *string `json:"api_url,omitempty" yaml:"api_url,omitempty" hcl:"api_url"`
@@ -181,6 +203,7 @@ type WebexIntegration struct {
 }
 
 type WebhookIntegration struct {
+	IntegrationBase
 	URL string `json:"url" yaml:"url" hcl:"url"`
 
 	HTTPMethod               *string `json:"httpMethod,omitempty" yaml:"httpMethod,omitempty" hcl:"http_method"`
@@ -194,17 +217,37 @@ type WebhookIntegration struct {
 }
 
 type WecomIntegration struct {
-	URL *Secret `json:"url" yaml:"url" hcl:""`
+	IntegrationBase
+	URL     *Secret `json:"url,omitempty" yaml:"url,omitempty" hcl:"url"`
+	Secret  *Secret `json:"secret,omitempty" yaml:"secret,omitempty" hcl:"secret"`
+	AgentID *string `json:"agent_id,omitempty" yaml:"agent_id,omitempty" hcl:"agent_id"`
+	CorpID  *string `json:"corp_id,omitempty" yaml:"corp_id,omitempty" hcl:"corp_id"`
+	Message *string `json:"message,omitempty" yaml:"message,omitempty" hcl:"message"`
+	Title   *string `json:"title,omitempty" yaml:"title,omitempty" hcl:"title"`
+	MsgType *string `json:"msgtype,omitempty" yaml:"msgtype,omitempty" hcl:"msg_type"`
+	ToUser  *string `json:"touser,omitempty" yaml:"touser,omitempty" hcl:"to_user"`
+}
 
-	Message string `json:"message,omitempty" yaml:"message,omitempty" hcl:"message"`
-	Title   string `json:"title,omitempty" yaml:"title,omitempty" hcl:"title"`
-
-	Channel     string  `json:"-" yaml:"-" hcl:""`
-	EndpointURL string  `json:"endpointUrl,omitempty" yaml:"endpointUrl,omitempty" hcl:""`
-	AgentID     string  `json:"agent_id,omitempty" yaml:"agent_id,omitempty" hcl:""`
-	CorpID      string  `json:"corp_id,omitempty" yaml:"corp_id,omitempty" hcl:""`
-	Secret      *Secret `json:"secret,omitempty" yaml:"secret,omitempty" hcl:""`
-	MsgType     MsgType `json:"msgtype,omitempty" yaml:"msgtype,omitempty" hcl:""`
-
-	ToUser string `json:"touser,omitempty" yaml:"touser,omitempty" hcl:""`
+type ContactPoint struct {
+	Name         string                    `json:"name" yaml:"name" hcl:"name"`
+	Alertmanager []AlertmanagerIntegration `json:"alertmanager" yaml:"alertmanager" hcl:"alertmanager,block"`
+	Dingding     []DingdingIntegration     `json:"dingding" yaml:"dingding" hcl:"dingding,block"`
+	Discord      []DiscordIntegration      `json:"discord" yaml:"discord" hcl:"discord,block"`
+	Email        []EmailIntegration        `json:"email" yaml:"email" hcl:"email,block"`
+	Googlechat   []GooglechatIntegration   `json:"googlechat" yaml:"googlechat" hcl:"googlechat,block"`
+	Kafka        []KafkaIntegration        `json:"kafka" yaml:"kafka" hcl:"kafka,block"`
+	Line         []LineIntegration         `json:"line" yaml:"line" hcl:"line,block"`
+	Opsgenie     []OpsgenieIntegration     `json:"opsgenie" yaml:"opsgenie" hcl:"opsgenie,block"`
+	Pagerduty    []PagerdutyIntegration    `json:"pagerduty" yaml:"pagerduty" hcl:"pagerduty,block"`
+	OnCall       []OnCallIntegration       `json:"oncall" yaml:"oncall" hcl:"oncall,block"`
+	Pushover     []PushoverIntegration     `json:"pushover" yaml:"pushover" hcl:"pushover,block"`
+	Sensugo      []SensugoIntegration      `json:"sensugo" yaml:"sensugo" hcl:"sensugo,block"`
+	Slack        []SlackIntegration        `json:"slack" yaml:"slack" hcl:"slack,block"`
+	Teams        []TeamsIntegration        `json:"teams" yaml:"teams" hcl:"teams,block"`
+	Telegram     []TelegramIntegration     `json:"telegram" yaml:"telegram" hcl:"telegram,block"`
+	Threema      []ThreemaIntegration      `json:"threema" yaml:"threema" hcl:"threema,block"`
+	Victorops    []VictoropsIntegration    `json:"victorops" yaml:"victorops" hcl:"victorops,block"`
+	Webhook      []WebhookIntegration      `json:"webhook" yaml:"webhook" hcl:"webhook,block"`
+	Wecom        []WecomIntegration        `json:"wecom" yaml:"wecom" hcl:"wecom,block"`
+	Webex        []WebexIntegration        `json:"webex" yaml:"webex" hcl:"webex,block"`
 }
