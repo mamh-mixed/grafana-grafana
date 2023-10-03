@@ -4,12 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
 	"xorm.io/xorm"
 
+	"github.com/bwmarrin/snowflake"
 	"github.com/grafana/grafana/pkg/infra/appcontext"
 	"github.com/grafana/grafana/pkg/infra/grn"
 	"github.com/grafana/grafana/pkg/infra/log"
@@ -32,11 +35,17 @@ var _ entity.EntityStoreServer = &sqlEntityServer{}
 var _ entity.EntityStoreAdminServer = &sqlEntityServer{}
 
 func ProvideSQLEntityServer(db EntityDB /*, cfg *setting.Cfg, grpcServerProvider grpcserver.Provider*/) (entity.EntityStoreServer, error) {
+	snode, err := snowflake.NewNode(rand.Int63n(1024))
+	if err != nil {
+		return nil, err
+	}
+
 	entityServer := &sqlEntityServer{
-		db:      db,
-		sess:    db.GetSession(),
-		dialect: migrator.NewDialect(db.GetEngine().DriverName()),
-		log:     log.New("sql-entity-server"),
+		db:        db,
+		sess:      db.GetSession(),
+		dialect:   migrator.NewDialect(db.GetEngine().DriverName()),
+		log:       log.New("sql-entity-server"),
+		snowflake: snode,
 	}
 
 	// entity.RegisterEntityStoreServer(grpcServerProvider.GetServer(), entityServer)
@@ -45,10 +54,11 @@ func ProvideSQLEntityServer(db EntityDB /*, cfg *setting.Cfg, grpcServerProvider
 }
 
 type sqlEntityServer struct {
-	log     log.Logger
-	db      EntityDB // needed to keep xorm engine in scope
-	sess    *session.SessionDB
-	dialect migrator.Dialect
+	log       log.Logger
+	db        EntityDB // needed to keep xorm engine in scope
+	sess      *session.SessionDB
+	dialect   migrator.Dialect
+	snowflake *snowflake.Node
 }
 
 func (s *sqlEntityServer) getReadSelect(r *entity.ReadEntityRequest) string {
@@ -69,6 +79,10 @@ func (s *sqlEntityServer) getReadSelect(r *entity.ReadEntityRequest) string {
 	if r.WithSummary {
 		fields = append(fields, "name", "slug", "description", "labels", "fields")
 	}
+	if r.WithStatus {
+		fields = append(fields, "status")
+	}
+
 	quotedFields := make([]string, len(fields))
 	for i, f := range fields {
 		quotedFields[i] = s.dialect.Quote(f)
@@ -78,14 +92,18 @@ func (s *sqlEntityServer) getReadSelect(r *entity.ReadEntityRequest) string {
 
 func (s *sqlEntityServer) rowToReadEntityResponse(ctx context.Context, rows *sql.Rows, r *entity.ReadEntityRequest) (*entity.Entity, error) {
 	raw := &entity.Entity{
-		GRN:    &grn.GRN{},
+		GRN:    &grn.GRN{ResourceGroup: "playlist.x.grafana.com"},
 		Origin: &entity.EntityOriginInfo{},
 	}
+
+	errors := ""
+	labels := ""
+	fields := ""
 
 	args := []any{
 		&raw.Guid,
 		&raw.GRN.TenantID, &raw.GRN.ResourceKind, &raw.GRN.ResourceIdentifier, &raw.Folder,
-		&raw.Version, &raw.Size, &raw.ETag, &raw.Errors,
+		&raw.Version, &raw.Size, &raw.ETag, &errors,
 		&raw.CreatedAt, &raw.CreatedBy,
 		&raw.UpdatedAt, &raw.UpdatedBy,
 		&raw.Origin.Source, &raw.Origin.Key, &raw.Origin.Time,
@@ -97,7 +115,10 @@ func (s *sqlEntityServer) rowToReadEntityResponse(ctx context.Context, rows *sql
 		args = append(args, &raw.Meta)
 	}
 	if r.WithSummary {
-		args = append(args, &raw.Name, &raw.Slug, &raw.Description, &raw.Labels, &raw.Fields)
+		args = append(args, &raw.Name, &raw.Slug, &raw.Description, &labels, &fields)
+	}
+	if r.WithStatus {
+		args = append(args, &raw.Status)
 	}
 
 	err := rows.Scan(args...)
@@ -107,6 +128,13 @@ func (s *sqlEntityServer) rowToReadEntityResponse(ctx context.Context, rows *sql
 
 	if raw.Origin.Source == "" {
 		raw.Origin = nil
+	}
+
+	// unmarshal json labels
+	if labels != "" {
+		if err := json.Unmarshal([]byte(labels), &raw.Labels); err != nil {
+			return nil, err
+		}
 	}
 
 	return raw, nil
@@ -123,20 +151,23 @@ func (s *sqlEntityServer) validateGRN(ctx context.Context, grn *grn.GRN) (*grn.G
 	if grn.TenantID == 0 {
 		grn.TenantID = user.OrgID
 	} else if grn.TenantID != user.OrgID {
-		return nil, fmt.Errorf("tenant ID does not match userID")
+		return nil, fmt.Errorf("tenant ID does not match userID: %+v", grn)
 	}
 
+	if grn.ResourceGroup == "" {
+		return nil, fmt.Errorf("GRN missing ResourceGroup: %+v", grn)
+	}
 	if grn.ResourceKind == "" {
-		return nil, fmt.Errorf("GRN missing ResourceKind")
+		return nil, fmt.Errorf("GRN missing ResourceKind: %+v", grn)
 	}
 	if grn.ResourceIdentifier == "" {
-		return nil, fmt.Errorf("GRN missing ResourceIdentifier")
+		return nil, fmt.Errorf("GRN missing ResourceIdentifier: %+v", grn)
 	}
 	if len(grn.ResourceIdentifier) > 64 {
-		return nil, fmt.Errorf("GRN ResourceIdentifier is too long (>64)")
+		return nil, fmt.Errorf("GRN ResourceIdentifier is too long (>64): %+v", grn)
 	}
 	if strings.ContainsAny(grn.ResourceIdentifier, "/#$@?") {
-		return nil, fmt.Errorf("invalid character in GRN")
+		return nil, fmt.Errorf("invalid character in GRN: %+v", grn)
 	}
 	return grn, nil
 }
@@ -243,6 +274,8 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 		return nil, err
 	}
 
+	fmt.Printf("r.Entity: %#v\n", r.Entity)
+
 	timestamp := time.Now().UnixMilli()
 	createdAt := r.Entity.CreatedAt
 	createdBy := r.Entity.CreatedBy
@@ -263,18 +296,15 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 	}
 
 	rsp := &entity.WriteEntityResponse{
+		Entity: &entity.Entity{},
 		Status: entity.WriteEntityResponse_CREATED, // Will be changed if not true
-	}
-	origin := r.Entity.Origin
-	if origin == nil {
-		origin = &entity.EntityOriginInfo{}
 	}
 
 	err = s.sess.WithTransaction(ctx, func(tx *session.SessionTx) error {
 		current, err := s.read(ctx, tx, &entity.ReadEntityRequest{
 			GRN:         grn,
 			WithMeta:    true,
-			WithBody:    false,
+			WithBody:    true,
 			WithStatus:  true,
 			WithSummary: true,
 		})
@@ -283,10 +313,8 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 		}
 
 		// Optimistic locking
-		if r.PreviousVersion != "" {
-			if r.PreviousVersion != current.Version {
-				return fmt.Errorf("optimistic lock failed")
-			}
+		if r.PreviousVersion != "" && r.PreviousVersion != current.Version {
+			return fmt.Errorf("optimistic lock failed")
 		}
 
 		isUpdate := false
@@ -300,7 +328,7 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 					createdBy = current.CreatedBy
 				}
 
-				_, err = doDelete(ctx, tx, &entity.Entity{Guid: current.Guid, GRN: grn})
+				err = doDelete(ctx, tx, current)
 				if err != nil {
 					s.log.Error("error removing old version", "msg", err.Error())
 					return err
@@ -323,11 +351,15 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 		} else {
 			// generate guid for new entity
 			current.Guid = ulid.Make().String()
+			current.GRN = grn
 		}
 
-		// Set the comment on this write
-		current.Message = r.Entity.Message
-		current.Version = ulid.Make().String()
+		if r.Entity.Folder != "" {
+			current.Folder = r.Entity.Folder
+		}
+		if r.Entity.Slug != "" {
+			current.Slug = r.Entity.Slug
+		}
 
 		if r.Entity.Body != nil {
 			current.Body = r.Entity.Body
@@ -346,6 +378,55 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 		current.ETag = etag
 		current.UpdatedAt = updatedAt
 		current.UpdatedBy = updatedBy
+
+		if r.Entity.Name != "" {
+			current.Name = r.Entity.Name
+		}
+		if r.Entity.Description != "" {
+			current.Description = r.Entity.Description
+		}
+
+		labels, err := json.Marshal(r.Entity.Labels)
+		if err != nil {
+			s.log.Error("error marshalling labels", "msg", err.Error())
+			return err
+		}
+
+		fields, err := json.Marshal(r.Entity.Fields)
+		if err != nil {
+			s.log.Error("error marshalling fields", "msg", err.Error())
+			return err
+		}
+
+		errors, err := json.Marshal(r.Entity.Errors)
+		if err != nil {
+			s.log.Error("error marshalling errors", "msg", err.Error())
+			return err
+		}
+
+		if current.Origin == nil {
+			current.Origin = &entity.EntityOriginInfo{}
+		}
+
+		if r.Entity.Origin != nil {
+			if r.Entity.Origin.Source != "" {
+				current.Origin.Source = r.Entity.Origin.Source
+			}
+			if r.Entity.Origin.Key != "" {
+				current.Origin.Key = r.Entity.Origin.Key
+			}
+			if r.Entity.Origin.Time > 0 {
+				current.Origin.Time = r.Entity.Origin.Time
+			}
+		}
+
+		// Set the comment on this write
+		if r.Entity.Message != "" {
+			current.Message = r.Entity.Message
+		}
+
+		// Update version
+		current.Version = s.snowflake.Generate().String()
 
 		values := map[string]any{
 			// below are only set at creation
@@ -368,13 +449,17 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 			"version":     current.Version,
 			"name":        current.Name,
 			"description": current.Description,
-			"labels":      current.Labels,
-			"fields":      current.Fields,
-			"errors":      current.Errors,
-			"origin":      origin.Source,
-			"origin_key":  origin.Key,
-			"origin_ts":   origin.Time,
+			"labels":      labels,
+			"fields":      fields,
+			"errors":      errors,
+			"origin":      current.Origin.Source,
+			"origin_key":  current.Origin.Key,
+			"origin_ts":   current.Origin.Time,
+			"message":     current.Message,
 		}
+
+		fmt.Printf("VALUES: %+v\n", values)
+		fmt.Printf("CURRENT: %+v\n", current)
 
 		// 1. Add the `entity_history` values
 		query, args, err := s.dialect.InsertQuery("entity_history", values)
@@ -390,7 +475,6 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 		}
 
 		// 5. Add/update the main `entity` table
-		rsp.Entity = current
 		if isUpdate {
 			// remove values that are only set at insert
 			delete(values, "guid")
@@ -435,18 +519,20 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 			rsp.Status = entity.WriteEntityResponse_CREATED
 		}
 
-		switch current.GRN.ResourceKind {
-		case entity.StandardKindFolder:
-			err = updateFolderTree(ctx, tx, r.Entity.GRN.TenantID)
-			if err != nil {
-				s.log.Error("error updating folder tree", "msg", err.Error())
-				return err
+		/*
+			switch current.GRN.ResourceKind {
+			case entity.StandardKindFolder:
+				err = updateFolderTree(ctx, tx, r.Entity.GRN.TenantID)
+				if err != nil {
+					s.log.Error("error updating folder tree", "msg", err.Error())
+					return err
+				}
 			}
-		}
+		*/
 
 		rsp.Entity = current
 
-		return s.writeSearchInfo(ctx, tx, current)
+		return nil // s.writeSearchInfo(ctx, tx, current)
 	})
 	if err != nil {
 		s.log.Error("error writing entity", "msg", err.Error())
@@ -456,6 +542,7 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 	return rsp, err
 }
 
+/*
 func (s *sqlEntityServer) writeSearchInfo(
 	ctx context.Context,
 	tx *session.SessionTx,
@@ -486,50 +573,75 @@ func (s *sqlEntityServer) writeSearchInfo(
 
 	return nil
 }
+*/
 
 func (s *sqlEntityServer) Delete(ctx context.Context, r *entity.DeleteEntityRequest) (*entity.DeleteEntityResponse, error) {
 	rsp := &entity.DeleteEntityResponse{}
 
 	err := s.sess.WithTransaction(ctx, func(tx *session.SessionTx) error {
-		entity, err := s.Read(ctx, &entity.ReadEntityRequest{
-			GRN: r.GRN,
+		var err error
+		rsp.Entity, err = s.Read(ctx, &entity.ReadEntityRequest{
+			GRN:         r.GRN,
+			WithBody:    true,
+			WithMeta:    true,
+			WithStatus:  true,
+			WithSummary: true,
 		})
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				rsp.Status = entity.DeleteEntityResponse_NOTFOUND
+			} else {
+				rsp.Status = entity.DeleteEntityResponse_ERROR
+			}
 			return err
 		}
 
-		rsp.OK, err = doDelete(ctx, tx, entity)
-		return err
+		if r.PreviousVersion != "" && r.PreviousVersion != rsp.Entity.Version {
+			rsp.Status = entity.DeleteEntityResponse_ERROR
+			return fmt.Errorf("optimistic lock failed")
+		}
+
+		err = doDelete(ctx, tx, rsp.Entity)
+		if err != nil {
+			rsp.Status = entity.DeleteEntityResponse_ERROR
+			return err
+		}
+
+		rsp.Status = entity.DeleteEntityResponse_DELETED
+		return nil
 	})
 
 	return rsp, err
 }
 
-func doDelete(ctx context.Context, tx *session.SessionTx, ent *entity.Entity) (bool, error) {
+func doDelete(ctx context.Context, tx *session.SessionTx, ent *entity.Entity) error {
 	_, err := tx.Exec(ctx, "DELETE FROM entity WHERE guid=?", ent.Guid)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	// TODO: keep history? would need current version bump, and the "write" would have to get from history
 	_, err = tx.Exec(ctx, "DELETE FROM entity_history WHERE guid=?", ent.Guid)
 	if err != nil {
-		return false, err
+		return err
 	}
 	_, err = tx.Exec(ctx, "DELETE FROM entity_labels WHERE guid=?", ent.Guid)
 	if err != nil {
-		return false, err
+		return err
 	}
 	_, err = tx.Exec(ctx, "DELETE FROM entity_ref WHERE guid=?", ent.Guid)
 	if err != nil {
-		return false, err
+		return err
 	}
 
 	if ent.GRN.ResourceKind == entity.StandardKindFolder {
 		err = updateFolderTree(ctx, tx, ent.GRN.TenantID)
+		if err != nil {
+			return err
+		}
 	}
 
-	return true, err
+	return nil
 }
 
 func (s *sqlEntityServer) History(ctx context.Context, r *entity.EntityHistoryRequest) (*entity.EntityHistoryResponse, error) {
@@ -677,16 +789,17 @@ func (s *sqlEntityServer) Search(ctx context.Context, r *entity.EntitySearchRequ
 	token := ""
 	rsp := &entity.EntitySearchResponse{}
 	for rows.Next() {
-		result := &entity.EntitySearchResult{
+		result := &entity.Entity{
 			GRN: &grn.GRN{},
 		}
 
 		var labels []byte
+		var errors []byte
 
 		args := []any{
 			&token, &result.Guid,
 			&result.GRN.TenantID, &result.GRN.ResourceKind, &result.GRN.ResourceIdentifier,
-			&result.Version, &result.Folder, &result.Slug, &result.ErrorJson,
+			&result.Version, &result.Folder, &result.Slug, &errors,
 			&result.Size, &result.UpdatedAt, &result.UpdatedBy,
 			&result.Name, &result.Description,
 		}
@@ -697,7 +810,7 @@ func (s *sqlEntityServer) Search(ctx context.Context, r *entity.EntitySearchRequ
 			args = append(args, &labels)
 		}
 		if r.WithFields {
-			args = append(args, &result.FieldsJson)
+			args = append(args, &result.Fields)
 		}
 
 		err = rows.Scan(args...)
@@ -773,14 +886,14 @@ func (s *sqlEntityServer) FindReferences(ctx context.Context, r *entity.Referenc
 	token := ""
 	rsp := &entity.EntitySearchResponse{}
 	for rows.Next() {
-		result := &entity.EntitySearchResult{
+		result := &entity.Entity{
 			GRN: &grn.GRN{},
 		}
 
 		args := []any{
 			&token, &result.Guid,
 			&result.GRN.TenantID, &result.GRN.ResourceKind, &result.GRN.ResourceIdentifier,
-			&result.Version, &result.Folder, &result.Slug, &result.ErrorJson,
+			&result.Version, &result.Folder, &result.Slug, &result.Errors,
 			&result.Size, &result.UpdatedAt, &result.UpdatedBy,
 			&result.Name, &result.Description, &result.Meta,
 		}

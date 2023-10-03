@@ -96,9 +96,14 @@ var (
 // Adds the list of known types to the given scheme.
 func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
-		&Playlist{},
-		&PlaylistList{},
+		&Playlist{TypeMeta: metav1.TypeMeta{Kind: "Playlist", APIVersion: SchemeGroupVersion.String()}},
+		&PlaylistList{TypeMeta: metav1.TypeMeta{Kind: "PlaylistList", APIVersion: SchemeGroupVersion.String()}},
 	)
+	scheme.AddKnownTypes(schema.GroupVersion{Group: GroupName, Version: runtime.APIVersionInternal},
+		&Playlist{TypeMeta: metav1.TypeMeta{Kind: "Playlist", APIVersion: SchemeGroupVersion.String()}},
+		&PlaylistList{TypeMeta: metav1.TypeMeta{Kind: "PlaylistList", APIVersion: SchemeGroupVersion.String()}},
+	)
+
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
 }

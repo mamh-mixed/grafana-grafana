@@ -7,33 +7,39 @@ package grafanaapiserver
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/conversion"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/storage"
+	"k8s.io/apiserver/pkg/storage/storagebackend"
 	"k8s.io/apiserver/pkg/storage/storagebackend/factory"
 
 	"github.com/grafana/grafana/pkg/services/store/entity"
+	"github.com/grafana/grafana/pkg/util"
 )
 
 var _ storage.Interface = (*Storage)(nil)
 
-const MaxUpdateAttempts = 30
+const MaxUpdateAttempts = 1
 
 // Storage implements storage.Interface and storage resources as JSON files on disk.
 type Storage struct {
-	store entity.EntityStoreServer
-	gr    schema.GroupResource
-	codec runtime.Codec
-	// keyFunc      func(obj runtime.Object) (string, error)
-	// newFunc      func() runtime.Object
-	// newListFunc  func() runtime.Object
-	// getAttrsFunc storage.AttrFunc
+	config       *storagebackend.ConfigForResource
+	store        entity.EntityStoreServer
+	gr           schema.GroupResource
+	codec        runtime.Codec
+	keyFunc      func(obj runtime.Object) (string, error)
+	newFunc      func() runtime.Object
+	newListFunc  func() runtime.Object
+	getAttrsFunc storage.AttrFunc
 	// trigger      storage.IndexerFuncs
 	// indexers     *cache.Indexers
 
@@ -47,14 +53,24 @@ var ErrFileNotExists = fmt.Errorf("file doesn't exist")
 var ErrNamespaceNotExists = errors.New("namespace does not exist")
 
 func NewStorage(
+	config *storagebackend.ConfigForResource,
 	gr schema.GroupResource,
 	store entity.EntityStoreServer,
 	codec runtime.Codec,
+	keyFunc func(obj runtime.Object) (string, error),
+	newFunc func() runtime.Object,
+	newListFunc func() runtime.Object,
+	getAttrsFunc storage.AttrFunc,
 ) (storage.Interface, factory.DestroyFunc, error) {
 	return &Storage{
-		gr:    gr,
-		codec: codec,
-		store: store,
+		config:       config,
+		gr:           gr,
+		codec:        codec,
+		store:        store,
+		keyFunc:      keyFunc,
+		newFunc:      newFunc,
+		newListFunc:  newListFunc,
+		getAttrsFunc: getAttrsFunc,
 	}, nil, nil
 }
 
@@ -62,6 +78,67 @@ func NewStorage(
 // in seconds (0 means forever). If no error is returned and out is not nil, out will be
 // set to the read value from database.
 func (s *Storage) Create(ctx context.Context, key string, obj runtime.Object, out runtime.Object, ttl uint64) error {
+	ctx, err := contextWithFakeGrafanaUser(ctx)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("k8s CREATE:%#v\n", obj)
+
+	/*
+		if err := s.Versioner().PrepareObjectForStorage(obj); err != nil {
+			return err
+		}
+	*/
+
+	metaAccessor, err := meta.Accessor(obj)
+	if err != nil {
+		return err
+	}
+
+	// Replace the default name generation strategy
+	if metaAccessor.GetGenerateName() != "" {
+		k, err := ParseKey(key)
+		if err != nil {
+			return err
+		}
+		k.Name = util.GenerateShortUID()
+		key = k.String()
+
+		metaAccessor.SetName(k.Name)
+		metaAccessor.SetGenerateName("")
+	}
+
+	e, err := resourceToEntity(key, obj)
+	if err != nil {
+		return err
+	}
+
+	req := &entity.WriteEntityRequest{
+		Entity: e,
+	}
+
+	rsp, err := s.store.Write(ctx, req)
+	if err != nil {
+		return err
+	}
+	if rsp.Status != entity.WriteEntityResponse_CREATED {
+		return fmt.Errorf("this was not a create operation... (%s)", rsp.Status.String())
+	}
+
+	err = entityToResource(rsp.Entity, out)
+	if err != nil {
+		return apierrors.NewInternalError(err)
+	}
+
+	/*
+		s.watchSet.notifyWatchers(watch.Event{
+			Object: out.DeepCopyObject(),
+			Type:   watch.Added,
+		})
+	*/
+
+	fmt.Printf("k8s CREATE:%#v\n", out)
 	return nil
 }
 
@@ -73,6 +150,35 @@ func (s *Storage) Create(ctx context.Context, key string, obj runtime.Object, ou
 func (s *Storage) Delete(
 	ctx context.Context, key string, out runtime.Object, preconditions *storage.Preconditions,
 	validateDeletion storage.ValidateObjectFunc, cachedExistingObject runtime.Object) error {
+	ctx, err := contextWithFakeGrafanaUser(ctx)
+	if err != nil {
+		return apierrors.NewInternalError(err)
+	}
+
+	grn, err := keyToGRN(key, out.GetObjectKind().GroupVersionKind().Kind)
+	if err != nil {
+		return apierrors.NewInternalError(err)
+	}
+
+	previousVersion := ""
+	if preconditions != nil && preconditions.ResourceVersion != nil {
+		previousVersion = *preconditions.ResourceVersion
+	}
+
+	rsp, err := s.store.Delete(ctx, &entity.DeleteEntityRequest{
+		GRN:             grn,
+		PreviousVersion: previousVersion,
+	})
+	if err != nil {
+		return err
+	}
+
+	err = entityToResource(rsp.Entity, out)
+	if err != nil {
+		return apierrors.NewInternalError(err)
+	}
+
+	fmt.Printf("k8s DELETE:%#v\n", out)
 	return nil
 }
 
@@ -95,39 +201,40 @@ func (s *Storage) Watch(ctx context.Context, key string, opts storage.ListOption
 func (s *Storage) Get(ctx context.Context, key string, opts storage.GetOptions, objPtr runtime.Object) error {
 	ctx, err := contextWithFakeGrafanaUser(ctx)
 	if err != nil {
-		return err
+		return apierrors.NewInternalError(err)
 	}
-	grn, err := keyToGRN(key, &s.gr)
+
+	grn, err := keyToGRN(key, objPtr.GetObjectKind().GroupVersionKind().Kind)
 	if err != nil {
-		return err
+		return apierrors.NewInternalError(err)
 	}
 
 	rsp, err := s.store.Read(ctx, &entity.ReadEntityRequest{
-		GRN:        grn,
-		WithMeta:   true,
-		WithBody:   true,
-		WithStatus: true,
+		GRN:         grn,
+		WithMeta:    true,
+		WithBody:    true,
+		WithStatus:  true,
+		WithSummary: true,
 	})
 	if err != nil {
 		return err
 	}
+
 	if rsp.GRN == nil {
+		if opts.IgnoreNotFound {
+			return nil
+		}
+
 		return apierrors.NewNotFound(s.gr, grn.ResourceIdentifier)
 	}
 
-	res, err := enityToResource(rsp)
+	err = entityToResource(rsp, objPtr)
 	if err != nil {
-		return err
+		return apierrors.NewInternalError(err)
 	}
-	// HACK???  should be saved with the payload
-	res.APIVersion = "core.kinds.grafana.com" + "/" + "v0-alpha" // << hardcoded
-	res.Kind = grn.ResourceKind
 
-	jjj, _ := json.Marshal(res)
-	_, _, err = s.codec.Decode(jjj, nil, objPtr)
-
-	fmt.Printf("k8s GET/GOT:%s (rv:%s)\n", res.Metadata.Name, res.Metadata.ResourceVersion)
-	return err
+	fmt.Printf("k8s GET:%#v\n\n", objPtr)
+	return nil
 }
 
 // GetList unmarshalls objects found at key into a *List api object (an object
@@ -137,6 +244,54 @@ func (s *Storage) Get(ctx context.Context, key string, opts storage.GetOptions, 
 // The returned contents may be delayed, but it is guaranteed that they will
 // match 'opts.ResourceVersion' according 'opts.ResourceVersionMatch'.
 func (s *Storage) GetList(ctx context.Context, key string, opts storage.ListOptions, listObj runtime.Object) error {
+	ctx, err := contextWithFakeGrafanaUser(ctx)
+	if err != nil {
+		return apierrors.NewInternalError(err)
+	}
+
+	k := s.newFunc().GetObjectKind()
+
+	fmt.Printf("kind: %#v\n", k)
+
+	listPtr, err := meta.GetItemsPtr(listObj)
+	if err != nil {
+		return err
+	}
+	v, err := conversion.EnforcePtr(listPtr)
+	if err != nil {
+		return err
+	}
+
+	rsp, err := s.store.Search(ctx, &entity.EntitySearchRequest{
+		Kind:     []string{s.newFunc().GetObjectKind().GroupVersionKind().Kind},
+		WithBody: true,
+	})
+	if err != nil {
+		return apierrors.NewInternalError(err)
+	}
+
+	for _, r := range rsp.Results {
+		res := s.newFunc()
+
+		err := entityToResource(r, res)
+		if err != nil {
+			return apierrors.NewInternalError(err)
+		}
+
+		v.Set(reflect.Append(v, reflect.ValueOf(res).Elem()))
+	}
+
+	listAccessor, err := meta.ListAccessor(listObj)
+	if err != nil {
+		return err
+	}
+
+	if rsp.NextPageToken != "" {
+		listAccessor.SetContinue(rsp.NextPageToken)
+		fmt.Printf("CONTINUE: %s\n", rsp.NextPageToken)
+	}
+
+	fmt.Printf("k8s GETLIST: %#v\n\n", listObj)
 	return nil
 }
 
@@ -162,6 +317,95 @@ func (s *Storage) GuaranteedUpdate(
 	tryUpdate storage.UpdateFunc,
 	cachedExistingObject runtime.Object,
 ) error {
+	// ctx, err := contextWithFakeGrafanaUser(ctx)
+	// if err != nil {
+	// 	return err
+	// }
+	var err error
+	for attempt := 1; attempt <= MaxUpdateAttempts; attempt = attempt + 1 {
+		err = s.guaranteedUpdate(ctx, key, destination, ignoreNotFound, preconditions, tryUpdate, cachedExistingObject)
+		if err == nil {
+			return nil
+		}
+	}
+
+	return err
+}
+
+func (s *Storage) guaranteedUpdate(
+	ctx context.Context,
+	key string,
+	destination runtime.Object,
+	ignoreNotFound bool,
+	preconditions *storage.Preconditions,
+	tryUpdate storage.UpdateFunc,
+	cachedExistingObject runtime.Object,
+) error {
+	ctx, err := contextWithFakeGrafanaUser(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = s.Get(ctx, key, storage.GetOptions{}, destination)
+	if err != nil {
+		return err
+	}
+
+	res := &storage.ResponseMeta{}
+	updatedObj, _, err := tryUpdate(destination, *res)
+	if err != nil {
+		fmt.Printf("tryUpdate error: %s\n", err.Error())
+		var statusErr *apierrors.StatusError
+		if errors.As(err, &statusErr) {
+			// For now, forbidden may come from a mutation handler
+			if statusErr.ErrStatus.Reason == metav1.StatusReasonForbidden {
+				return statusErr
+			}
+		}
+
+		return apierrors.NewInternalError(fmt.Errorf("could not successfully update object of type=%s, key=%s, err=%s", destination.GetObjectKind(), key, err.Error()))
+	}
+
+	e, err := resourceToEntity(key, updatedObj)
+	if err != nil {
+		return err
+	}
+
+	e.GRN.ResourceKind = destination.GetObjectKind().GroupVersionKind().Kind
+
+	previousVersion := ""
+	if preconditions != nil && preconditions.ResourceVersion != nil {
+		previousVersion = *preconditions.ResourceVersion
+	}
+
+	req := &entity.WriteEntityRequest{
+		Entity:          e,
+		PreviousVersion: previousVersion,
+	}
+
+	fmt.Printf("req: %#v\n", req)
+
+	rsp, err := s.store.Write(ctx, req)
+	if err != nil {
+		return err // continue???
+	}
+
+	if rsp.Status == entity.WriteEntityResponse_UNCHANGED {
+		return nil // destination is already set
+	}
+
+	err = entityToResource(rsp.Entity, destination)
+	if err != nil {
+		return apierrors.NewInternalError(err)
+	}
+
+	/*
+		s.watchSet.notifyWatchers(watch.Event{
+			Object: destination.DeepCopyObject(),
+			Type:   watch.Modified,
+		})
+	*/
+
 	return nil
 }
 
@@ -171,5 +415,5 @@ func (s *Storage) Count(key string) (int64, error) {
 }
 
 func (s *Storage) Versioner() storage.Versioner {
-	return nil
+	return &storage.APIObjectVersioner{}
 }

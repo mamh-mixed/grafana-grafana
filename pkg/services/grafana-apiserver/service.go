@@ -36,6 +36,8 @@ import (
 	"github.com/grafana/grafana/pkg/registry"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
+	entityDB "github.com/grafana/grafana/pkg/services/store/entity/db"
+	"github.com/grafana/grafana/pkg/services/store/entity/sqlstash"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/web"
 )
@@ -224,9 +226,17 @@ func (s *service) start(ctx context.Context) error {
 		return err
 	}
 
-	// serverConfig.ExtraConfig.RESTOptionsGetter = NewRESTOptionsGetter(s.cfg, s.features, unstructured.UnstructuredJSONScheme)
-	// serverConfig.GenericConfig.RESTOptionsGetter = NewRESTOptionsGetter(s.cfg, s.features, grafanaapiserver.Codecs.LegacyCodec(kindsv1.SchemeGroupVersion))
-	// serverConfig.GenericConfig.Config.RESTOptionsGetter = NewRESTOptionsGetter(s.cfg, s.features, grafanaapiserver.Codecs.LegacyCodec(kindsv1.SchemeGroupVersion))
+	eDB, err := entityDB.ProvideEntityDB(nil, s.cfg, s.features)
+	if err != nil {
+		return err
+	}
+
+	store, err := sqlstash.ProvideSQLEntityServer(eDB)
+	if err != nil {
+		return err
+	}
+
+	serverConfig.Config.RESTOptionsGetter = NewRESTOptionsGetter(s.cfg, store, unstructured.UnstructuredJSONScheme)
 
 	authenticator, err := newAuthenticator(rootCert)
 	if err != nil {

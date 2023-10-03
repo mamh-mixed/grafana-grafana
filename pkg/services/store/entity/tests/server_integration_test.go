@@ -201,7 +201,7 @@ func TestIntegrationEntityServer(t *testing.T) {
 			PreviousVersion: writeResp.Entity.Version,
 		})
 		require.NoError(t, err)
-		require.True(t, deleteResp.OK)
+		require.Equal(t, deleteResp.Status, entity.DeleteEntityResponse_DELETED)
 
 		readRespAfterDelete, err := testCtx.client.Read(ctx, &entity.ReadEntityRequest{
 			GRN:      testGrn,
@@ -313,7 +313,7 @@ func TestIntegrationEntityServer(t *testing.T) {
 			PreviousVersion: writeResp3.Entity.Version,
 		})
 		require.NoError(t, err)
-		require.True(t, deleteResp.OK)
+		require.Equal(t, deleteResp.Status, entity.DeleteEntityResponse_DELETED)
 	})
 
 	t.Run("should be able to search for objects", func(t *testing.T) {

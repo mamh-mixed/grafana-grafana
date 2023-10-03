@@ -23,7 +23,7 @@ type ResourceOriginInfo struct {
 	Timestamp *time.Time `json:"time,omitempty"`
 
 	// Avoid extending
-	_ any
+	_ any `json:"-"`
 }
 
 // GrafanaResourceMetadata is standard k8s object metadata with helper functions
@@ -40,7 +40,7 @@ type GrafanaResource[Spec any, Status any] struct {
 	Status   *Status                 `json:"status,omitempty"`
 
 	// Avoid extending
-	_ any
+	_ any `json:"-"`
 }
 
 // Annotation keys
@@ -53,10 +53,10 @@ const annoKeyFolder = "grafana.com/folder"
 const annoKeySlug = "grafana.com/slug"
 
 // Identify where values came from
-const annoKeyOriginName = "grafana.com/origin/name"
-const annoKeyOriginPath = "grafana.com/origin/path"
-const annoKeyOriginKey = "grafana.com/origin/key"
-const annoKeyOriginTime = "grafana.com/origin/time"
+const annoKeyOriginName = "grafana.com/originName"
+const annoKeyOriginPath = "grafana.com/originPath"
+const annoKeyOriginKey = "grafana.com/originKey"
+const annoKeyOriginTime = "grafana.com/originTime"
 
 func (m *GrafanaResourceMetadata) set(key string, val string) {
 	if val == "" {

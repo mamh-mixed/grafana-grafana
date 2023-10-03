@@ -1,6 +1,7 @@
 package v0alpha1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/registry/generic"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
@@ -20,8 +21,12 @@ func newStorage(scheme *runtime.Scheme, optsGetter generic.RESTOptionsGetter) (*
 	strategy := grafanaregistry.NewStrategy(scheme)
 
 	store := &genericregistry.Store{
-		NewFunc:                   func() runtime.Object { return &Playlist{} },
-		NewListFunc:               func() runtime.Object { return &PlaylistList{} },
+		NewFunc: func() runtime.Object {
+			return &Playlist{TypeMeta: metav1.TypeMeta{Kind: "Playlist", APIVersion: "playlist.x.grafana.com/v0alpha1"}}
+		},
+		NewListFunc: func() runtime.Object {
+			return &PlaylistList{TypeMeta: metav1.TypeMeta{Kind: "PlaylistList", APIVersion: "playlist.x.grafana.com/v0alpha1"}}
+		},
 		PredicateFunc:             grafanaregistry.Matcher,
 		DefaultQualifiedResource:  Resource("playlists"),
 		SingularQualifiedResource: Resource("playlist"),

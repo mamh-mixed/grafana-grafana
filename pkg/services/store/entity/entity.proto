@@ -233,12 +233,26 @@ message DeleteEntityRequest {
   // Entity identifier
   grn.GRN GRN = 1;
 
-  // Used for optimistic locking.  If missing, the previous version will be replaced regardless
-  string previous_version = 3;
+  // Used for optimistic locking.  If missing, the current version will be deleted regardless
+  string previous_version = 2;
 }
 
 message DeleteEntityResponse {
-  bool OK = 1;
+  // Error info -- if exists, the delete did not happen
+  EntityErrorInfo error = 1;
+
+  // Entity details
+  Entity entity = 2;
+
+  // Status code
+  Status status = 3;
+
+  // Status enumeration
+  enum Status {
+    ERROR = 0;
+    DELETED = 1;
+    NOTFOUND = 2;
+  }
 }
 
 //-----------------------------------------------
@@ -376,7 +390,7 @@ message EntitySearchResult {
 }
 
 message EntitySearchResponse {
-  repeated EntitySearchResult results = 1;
+  repeated Entity results = 1;
 
   // More results exist... pass this in the next request
   string next_page_token = 2;

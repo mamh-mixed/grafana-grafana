@@ -16,29 +16,28 @@ import (
 	flowcontrolrequest "k8s.io/apiserver/pkg/util/flowcontrol/request"
 	"k8s.io/client-go/tools/cache"
 
-	"github.com/grafana/grafana/pkg/services/featuremgmt"
-	entityDB "github.com/grafana/grafana/pkg/services/store/entity/db"
-	"github.com/grafana/grafana/pkg/services/store/entity/sqlstash"
+	"github.com/grafana/grafana/pkg/services/store/entity"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
 var _ generic.RESTOptionsGetter = (*RESTOptionsGetter)(nil)
 
 type RESTOptionsGetter struct {
-	cfg      *setting.Cfg
-	features featuremgmt.FeatureToggles
-	Codec    runtime.Codec
+	cfg   *setting.Cfg
+	store entity.EntityStoreServer
+	Codec runtime.Codec
 }
 
-func NewRESTOptionsGetter(cfg *setting.Cfg, features featuremgmt.FeatureToggles, codec runtime.Codec) *RESTOptionsGetter {
+func NewRESTOptionsGetter(cfg *setting.Cfg, store entity.EntityStoreServer, codec runtime.Codec) *RESTOptionsGetter {
 	return &RESTOptionsGetter{
-		cfg:      cfg,
-		features: features,
-		Codec:    codec,
+		cfg:   cfg,
+		store: store,
+		Codec: codec,
 	}
 }
 
 func (f *RESTOptionsGetter) GetRESTOptions(resource schema.GroupResource) (generic.RESTOptions, error) {
+	// build connection string to uniquely identify the storage backend
 	connectionInfo, err := json.Marshal(f.cfg.SectionWithEnvOverrides("entity_api").KeysHash())
 	if err != nil {
 		return generic.RESTOptions{}, err
@@ -79,17 +78,7 @@ func (f *RESTOptionsGetter) GetRESTOptions(resource schema.GroupResource) (gener
 			trigger storage.IndexerFuncs,
 			indexers *cache.Indexers,
 		) (storage.Interface, factory.DestroyFunc, error) {
-			eDB, err := entityDB.ProvideEntityDB(nil, f.cfg, f.features)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			store, err := sqlstash.ProvideSQLEntityServer(eDB)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			return NewStorage(resource, store, f.Codec)
+			return NewStorage(config, resource, f.store, f.Codec, keyFunc, newFunc, newListFunc, getAttrsFunc)
 		},
 		DeleteCollectionWorkers:   0,
 		EnableGarbageCollection:   false,
