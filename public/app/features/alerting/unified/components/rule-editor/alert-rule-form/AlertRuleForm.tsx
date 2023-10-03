@@ -230,6 +230,7 @@ export const AlertRuleForm = ({ existing, prefill }: Props) => {
                       evaluateEvery={evaluateEvery}
                       setEvaluateEvery={setEvaluateEvery}
                       existing={Boolean(existing)}
+                      includeProvisioned={false}
                     />
                   )}
 
