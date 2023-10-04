@@ -1,12 +1,20 @@
 package api
 
 import (
+	"context"
+	"encoding/base64"
+	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/grafana/alerting/notify"
 	"github.com/stretchr/testify/require"
 
+	receiversTesting "github.com/grafana/alerting/receivers/testing"
+
 	"github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
-	"github.com/grafana/grafana/pkg/util"
+	"github.com/grafana/grafana/pkg/services/ngalert/models"
+	"github.com/grafana/grafana/pkg/services/ngalert/provisioning"
 )
 
 func TestToModel(t *testing.T) {
@@ -37,50 +45,78 @@ func TestToModel(t *testing.T) {
 	})
 }
 
+// Test that conversion notify.APIReceiver -> definitions.ContactPoint -> notify.APIReceiver does not lose data
 func TestContactPointFromContactPointExports(t *testing.T) {
-	cp := definitions.ContactPointExport{
-		OrgID: 1,
-		Name:  "Test",
-		Receivers: []definitions.ReceiverExport{
-			{
-				Type:                  "email",
-				Settings:              definitions.RawMessage(`{"addresses": "test@grafana.com,test2@grafana.com;test3@grafana.com\ntest4@granafa.com"}`),
-				DisableResolveMessage: false,
-			},
-			{
-				Type: "pushover",
-				Settings: definitions.RawMessage(`{
-				"priority": 1,
-				"okPriority": 2,
-				"retry": "555",
-				"expire": "333"
-			}`),
-				DisableResolveMessage: false,
-			},
-		},
+	getContactPointExport := func(t *testing.T, receiver *notify.APIReceiver) definitions.ContactPointExport {
+		export := make([]definitions.ReceiverExport, 0, len(receiver.Integrations))
+		for _, integrationConfig := range receiver.Integrations {
+			postable := &definitions.PostableGrafanaReceiver{
+				UID:                   integrationConfig.UID,
+				Name:                  integrationConfig.Name,
+				Type:                  integrationConfig.Type,
+				DisableResolveMessage: integrationConfig.DisableResolveMessage,
+				Settings:              definitions.RawMessage(integrationConfig.Settings),
+				SecureSettings:        integrationConfig.SecureSettings,
+			}
+			emb, err := provisioning.PostableGrafanaReceiverToEmbeddedContactPoint(
+				postable,
+				models.ProvenanceNone,
+				func(s string) string { // test configs are not encrypted but encoded
+					d, err := base64.StdEncoding.DecodeString(s)
+					require.NoError(t, err)
+					return string(d)
+				})
+			require.NoError(t, err)
+			ex, err := ReceiverExportFromEmbeddedContactPoint(emb)
+			require.NoError(t, err)
+			export = append(export, ex)
+		}
+
+		return definitions.ContactPointExport{
+			OrgID:     1,
+			Name:      receiver.Name,
+			Receivers: export,
+		}
 	}
-	res, err := ContactPointFromContactPointExports(cp)
-	require.NoError(t, err)
-	require.Len(t, res.Email, 1)
-	require.EqualValues(t, []string{
-		"test@grafana.com",
-		"test2@grafana.com",
-		"test3@grafana.com",
-		"test4@granafa.com",
-	}, res.Email[0].Addresses)
-	require.Len(t, res.Pushover, 1)
-	require.Equal(t, definitions.PushoverIntegration{
-		IntegrationBase:  definitions.IntegrationBase{},
-		UserKey:          "",
-		APIToken:         "",
-		AlertingPriority: util.Pointer(1),
-		OKPriority:       util.Pointer(2),
-		Retry:            util.Pointer(555),
-		Expire:           util.Pointer(333),
-		Device:           nil,
-		AlertingSound:    nil,
-		OKSound:          nil,
-		Title:            nil,
-		Message:          nil,
-	}, res.Pushover[0])
+
+	// use the configs for testing because they have all fields supported by integrations
+	for integrationType, cfg := range notify.AllKnownConfigsForTesting {
+		t.Run(integrationType, func(t *testing.T) {
+			recCfg := &notify.APIReceiver{
+				ConfigReceiver: notify.ConfigReceiver{Name: "test-receiver"},
+				GrafanaIntegrations: notify.GrafanaIntegrations{
+					Integrations: []*notify.GrafanaIntegrationConfig{
+						cfg.GetRawNotifierConfig("test"),
+					},
+				},
+			}
+
+			expected, err := notify.BuildReceiverConfiguration(context.Background(), recCfg, func(ctx context.Context, sjd map[string][]byte, key string, fallback string) string {
+				return receiversTesting.DecryptForTesting(sjd)(key, fallback)
+			})
+			require.NoError(t, err)
+
+			result, err := ContactPointFromContactPointExport(getContactPointExport(t, recCfg))
+			require.NoError(t, err)
+
+			back, err := ContactPointToContactPointExport(result)
+			require.NoError(t, err)
+
+			actual, err := notify.BuildReceiverConfiguration(context.Background(), &back, func(ctx context.Context, sjd map[string][]byte, key string, fallback string) string {
+				return receiversTesting.DecryptForTesting(sjd)(key, fallback)
+			})
+			require.NoError(t, err)
+
+			diff := cmp.Diff(expected, actual, cmp.FilterPath(func(path cmp.Path) bool {
+				t.Log(path.String())
+				return strings.Contains(path.String(), "Metadata.UID") ||
+					strings.Contains(path.String(), "Metadata.Name") ||
+					strings.Contains(path.String(), "PushoverConfigs.Settings.Upload") || // Ignored because the new model does not have it because this field is not used.
+					strings.Contains(path.String(), "WecomConfigs.Settings.EndpointURL") // This field is not exposed to user
+			}, cmp.Ignore()))
+			if len(diff) != 0 {
+				require.Failf(t, "The re-marshalled configuration does not match the expected one", diff)
+			}
+		})
+	}
 }
