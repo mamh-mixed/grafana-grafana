@@ -118,3 +118,4 @@ externalServiceAccounts,experimental,@grafana/grafana-authnz-team,true,false,fal
 alertingModifiedExport,experimental,@grafana/alerting-squad,false,false,false,false
 enableNativeHTTPHistogram,experimental,@grafana/hosted-grafana-team,false,false,false,false
 transformationsVariableSupport,experimental,@grafana/grafana-bi-squad,false,false,false,true
+managedPluginsInstall,experimental,@grafana/plugins-platform-backend,true,false,false,false

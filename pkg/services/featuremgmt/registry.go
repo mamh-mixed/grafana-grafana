@@ -830,5 +830,12 @@ var (
 			Stage:        FeatureStageExperimental,
 			Owner:        grafanaBiSquad,
 		},
+		{
+			Name:            "managedPluginsInstall",
+			Description:     "Install managed plugins directly from plugins catalog",
+			Stage:           FeatureStageExperimental,
+			RequiresDevMode: true,
+			Owner:           grafanaPluginsPlatformSquad,
+		},
 	}
 )
