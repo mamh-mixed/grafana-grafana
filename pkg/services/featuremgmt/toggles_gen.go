@@ -486,4 +486,8 @@ const (
 	// FlagKubernetesPlaylists
 	// Use the kubernetes API in the frontend for playlists
 	FlagKubernetesPlaylists = "kubernetesPlaylists"
+
+	// FlagAwsNewFormStyling
+	// Applies new form styling for configuration and query editors in AWS plugins
+	FlagAwsNewFormStyling = "awsNewFormStyling"
 )

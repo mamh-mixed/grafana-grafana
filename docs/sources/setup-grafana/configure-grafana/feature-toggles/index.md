@@ -145,6 +145,7 @@ Experimental features might be changed or removed without prior notice.
 | `enableNativeHTTPHistogram`                 | Enables native HTTP Histograms                                                                               |
 | `transformationsVariableSupport`            | Allows using variables in transformations                                                                    |
 | `kubernetesPlaylists`                       | Use the kubernetes API in the frontend for playlists                                                         |
+| `awsNewFormStyling`                         | Applies new form styling for configuration and query editors in AWS plugins                                  |
 
 ## Development feature toggles
 
