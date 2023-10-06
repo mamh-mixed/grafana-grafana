@@ -65,7 +65,7 @@ Each basic role is comprised of a number of _permissions_. For example, the view
 - `Action: annotations:delete, Scope: annotations:type:dashboard`: Enables the viewer to remove annotations from a dashboard.
 
 {{% admonition type="note" %}}
-You can't have a Grafana user without a basic role assigned. The `None` role contains no permissions.
+You can't have a Grafana user without a basic role assigned. Use role `None` to assign no permissions to the user.
 {{% /admonition %}}
 
 #### Basic role modification
