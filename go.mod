@@ -230,7 +230,7 @@ require (
 	github.com/armon/go-radix v1.0.0 // @grafana/grafana-app-platform-squad
 	github.com/blugelabs/bluge v0.1.9 // @grafana/backend-platform
 	github.com/blugelabs/bluge_segment_api v0.2.0 // @grafana/backend-platform
-	github.com/bufbuild/connect-go v1.4.1 // @grafana/observability-traces-and-profiling
+	github.com/bufbuild/connect-go v1.10.0 // @grafana/observability-traces-and-profiling
 	github.com/dlmiddlecote/sqlstats v1.0.2 // @grafana/backend-platform
 	github.com/drone/drone-cli v1.6.1 // @grafana/grafana-delivery
 	github.com/getkin/kin-openapi v0.120.0 // @grafana/grafana-operator-experience-squad
