@@ -4,21 +4,18 @@ import React, { PropsWithChildren } from 'react';
 import { Router } from 'react-router-dom';
 import { TestProvider } from 'test/helpers/TestProvider';
 
-import { mockFolderApi, setupMswServer } from 'app/features/alerting/unified/mockApi';
-import {
-  defaultGrafanaAlertingConfigurationStatusResponse,
-  mockAlertmanagerChoiceResponse,
-} from 'app/features/alerting/unified/mocks/alertmanagerApi';
+import { setupMswServer } from 'app/features/alerting/unified/mockApi';
+import { setFolderAccessControl } from 'app/features/alerting/unified/mocks/server/configure';
 import { AlertManagerDataSourceJsonData, AlertManagerImplementation } from 'app/plugins/datasource/alertmanager/types';
 import { AccessControlAction } from 'app/types';
-import { RulerGrafanaRuleDTO } from 'app/types/unified-alerting-dto';
 
-import { getCloudRule, getGrafanaRule, grantUserPermissions, mockDataSource, mockFolder } from '../mocks';
+import { getCloudRule, getGrafanaRule, grantUserPermissions, mockDataSource } from '../mocks';
 import { AlertmanagerProvider } from '../state/AlertmanagerContext';
 import { setupDataSources } from '../testSetup/datasources';
 import { DataSourceType, GRAFANA_RULES_SOURCE_NAME } from '../utils/datasource';
 
 import {
+  AlertRuleAction,
   AlertmanagerAction,
   useAlertmanagerAbilities,
   useAlertmanagerAbility,
@@ -142,19 +139,11 @@ describe('alertmanager abilities', () => {
   });
 });
 
+setupMswServer();
+
 describe('AlertRule abilities', () => {
-  const server = setupMswServer();
   it('should report that all actions are supported for a Grafana Managed alert rule', async () => {
     const rule = getGrafanaRule();
-
-    // TODO: Remove server mocking within test once server is run before all tests
-    mockFolderApi(server).folder(
-      (rule.rulerRule as RulerGrafanaRuleDTO).grafana_alert.namespace_uid,
-      mockFolder({
-        accessControl: { [AccessControlAction.AlertingRuleUpdate]: false },
-      })
-    );
-    mockAlertmanagerChoiceResponse(server, defaultGrafanaAlertingConfigurationStatusResponse);
 
     const abilities = renderHook(() => useAllAlertRuleAbilities(rule), { wrapper: TestProvider });
 
@@ -167,6 +156,18 @@ describe('AlertRule abilities', () => {
     });
 
     expect(abilities.result.current).toMatchSnapshot();
+  });
+
+  it('works out correct silences permission on folder basis', async () => {
+    setFolderAccessControl({ [AccessControlAction.AlertingSilenceCreate]: false });
+
+    const rule = getGrafanaRule();
+
+    const abilities = renderHook(() => useAllAlertRuleAbilities(rule), { wrapper: TestProvider });
+
+    await waitFor(() => expect(abilities.result.current).not.toBeUndefined());
+
+    expect(abilities.result.current[AlertRuleAction.Silence]).toEqual([true, false]);
   });
 
   it('should report no permissions while we are loading data for cloud rule', async () => {
