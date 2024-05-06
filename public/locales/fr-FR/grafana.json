@@ -1031,6 +1031,9 @@
     "incidents": {
       "title": "Incidents"
     },
+    "incident": {
+      "title": "Incident"
+    },
     "infrastructure": {
       "subtitle": "Connaissez l'état de santé de votre infrastructure",
       "title": "Infrastructure"

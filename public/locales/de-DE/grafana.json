@@ -1031,6 +1031,9 @@
     "incidents": {
       "title": "Störungen"
     },
+    "incident": {
+      "title": "Incident"
+    },
     "infrastructure": {
       "subtitle": "Verstehen Sie den Zustand Ihrer Infrastruktur",
       "title": "Infrastruktur"

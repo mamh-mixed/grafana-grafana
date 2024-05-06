@@ -1025,6 +1025,9 @@
     "incidents": {
       "title": "事件"
     },
+    "incident": {
+      "title": "事件"
+    },
     "infrastructure": {
       "subtitle": "了解您基础设施的健康",
       "title": "基础设施"
