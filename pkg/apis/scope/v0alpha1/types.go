@@ -108,3 +108,11 @@ type FindResults struct {
 	Found   []string `json:"found"`
 	Message string   `json:"message,omitempty"`
 }
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+type FindScopedDashboardsResults struct {
+	metav1.TypeMeta `json:",inline"`
+
+	Found   []ScopeDashboardBinding `json:"found"`
+	Message string                  `json:"message,omitempty"`
+}
