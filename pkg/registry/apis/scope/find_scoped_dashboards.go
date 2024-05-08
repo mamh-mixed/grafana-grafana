@@ -78,8 +78,8 @@ func (r *findScopedDashboardsREST) Connect(ctx context.Context, name string, opt
 		scopeName := req.URL.Query().Get("scope")
 		results := &scope.FindScopedDashboardsResults{
 			Message: fmt.Sprintf("Find: %s", scopeName),
+			Found:  make([]scope.ScopeDashboardBinding, 0)
 		}
-		results.Found = all.Items
 
 		for _, item := range all.Items {
 			if item.Spec.Scope == scopeName {
