@@ -338,6 +338,7 @@
    "type": "object"
   },
   "AlertRuleNotificationSettingsExport": {
+   "description": "Field name mismatches with Terraform provider schema are noted where applicable.",
    "properties": {
     "group_by": {
      "items": {
@@ -352,12 +353,14 @@
      "type": "string"
     },
     "mute_time_intervals": {
+     "description": "TF -\u003e `mute_timings`",
      "items": {
       "type": "string"
      },
      "type": "array"
     },
     "receiver": {
+     "description": "TF -\u003e `contact_point`",
      "type": "string"
     },
     "repeat_interval": {
@@ -967,7 +970,9 @@
    },
    "type": "object"
   },
-  "EvalQueriesResponse": {},
+  "EvalQueriesResponse": {
+   "type": "object"
+  },
   "ExplorePanelsState": {
    "description": "This is an object constructed with the keys as the values of the enum VisType and the value being a bag of properties"
   },
@@ -2435,7 +2440,6 @@
    "type": "object"
   },
   "PagerdutyImage": {
-   "description": "PagerdutyImage is an image",
    "properties": {
     "alt": {
      "type": "string"
@@ -2447,10 +2451,10 @@
      "type": "string"
     }
    },
+   "title": "PagerdutyImage is an image.",
    "type": "object"
   },
   "PagerdutyLink": {
-   "description": "PagerdutyLink is a link",
    "properties": {
     "href": {
      "type": "string"
@@ -2459,6 +2463,7 @@
      "type": "string"
     }
    },
+   "title": "PagerdutyLink is a link.",
    "type": "object"
   },
   "PermissionDenied": {
@@ -4176,7 +4181,6 @@
    "type": "object"
   },
   "URL": {
-   "description": "The general form represented is:\n\n[scheme:][//[userinfo@]host][/]path[?query][#fragment]\n\nURLs that do not start with a slash after the scheme are interpreted as:\n\nscheme:opaque[?query][#fragment]\n\nNote that the Path field is stored in decoded form: /%47%6f%2f becomes /Go/.\nA consequence is that it is impossible to tell which slashes in the Path were\nslashes in the raw URL and which were %2f. This distinction is rarely important,\nbut when it is, the code should use the EscapedPath method, which preserves\nthe original encoding of Path.\n\nThe RawPath field is an optional field which is only set when the default\nencoding of Path is different from the escaped path. See the EscapedPath method\nfor more details.\n\nURL's String method uses the EscapedPath method to obtain the path.",
    "properties": {
     "ForceQuery": {
      "type": "boolean"
@@ -4212,7 +4216,7 @@
      "$ref": "#/definitions/Userinfo"
     }
    },
-   "title": "A URL represents a parsed URL (technically, a URI reference).",
+   "title": "URL is a custom URL type that allows validation at configuration load time.",
    "type": "object"
   },
   "UpdateRuleGroupResponse": {
@@ -4242,7 +4246,7 @@
    "type": "object"
   },
   "Userinfo": {
-   "description": "The Userinfo type is an immutable encapsulation of username and\npassword details for a URL. An existing Userinfo value is guaranteed\nto have a username set (potentially empty, as allowed by RFC 2396),\nand optionally a password.",
+   "description": "The Userinfo type is an immutable encapsulation of username and\npassword details for a [URL]. An existing Userinfo value is guaranteed\nto have a username set (potentially empty, as allowed by RFC 2396),\nand optionally a password.",
    "type": "object"
   },
   "ValidationError": {
@@ -4442,8 +4446,10 @@
    "type": "object"
   },
   "alertGroups": {
+   "description": "AlertGroups alert groups",
    "items": {
-    "$ref": "#/definitions/alertGroup"
+    "$ref": "#/definitions/alertGroup",
+    "type": "object"
    },
    "type": "array"
   },
@@ -4546,49 +4552,6 @@
    "type": "object"
   },
   "gettableAlert": {
-   "description": "GettableAlert gettable alert",
-   "properties": {
-    "annotations": {
-     "$ref": "#/definitions/labelSet"
-    },
-    "endsAt": {
-     "description": "ends at",
-     "format": "date-time",
-     "type": "string"
-    },
-    "fingerprint": {
-     "description": "fingerprint",
-     "type": "string"
-    },
-    "generatorURL": {
-     "description": "generator URL\nFormat: uri",
-     "format": "uri",
-     "type": "string"
-    },
-    "labels": {
-     "$ref": "#/definitions/labelSet"
-    },
-    "receivers": {
-     "description": "receivers",
-     "items": {
-      "$ref": "#/definitions/receiver"
-     },
-     "type": "array"
-    },
-    "startsAt": {
-     "description": "starts at",
-     "format": "date-time",
-     "type": "string"
-    },
-    "status": {
-     "$ref": "#/definitions/alertStatus"
-    },
-    "updatedAt": {
-     "description": "updated at",
-     "format": "date-time",
-     "type": "string"
-    }
-   },
    "required": [
     "labels",
     "annotations",
@@ -4603,46 +4566,12 @@
   },
   "gettableAlerts": {
    "items": {
-    "$ref": "#/definitions/gettableAlert"
+    "$ref": "#/definitions/gettableAlert",
+    "type": "object"
    },
    "type": "array"
   },
   "gettableSilence": {
-   "properties": {
-    "comment": {
-     "description": "comment",
-     "type": "string"
-    },
-    "createdBy": {
-     "description": "created by",
-     "type": "string"
-    },
-    "endsAt": {
-     "description": "ends at",
-     "format": "date-time",
-     "type": "string"
-    },
-    "id": {
-     "description": "id",
-     "type": "string"
-    },
-    "matchers": {
-     "$ref": "#/definitions/matchers"
-    },
-    "startsAt": {
-     "description": "starts at",
-     "format": "date-time",
-     "type": "string"
-    },
-    "status": {
-     "$ref": "#/definitions/silenceStatus"
-    },
-    "updatedAt": {
-     "description": "updated at",
-     "format": "date-time",
-     "type": "string"
-    }
-   },
    "required": [
     "comment",
     "createdBy",
@@ -4658,34 +4587,12 @@
   "gettableSilences": {
    "description": "GettableSilences gettable silences",
    "items": {
-    "$ref": "#/definitions/gettableSilence"
+    "$ref": "#/definitions/gettableSilence",
+    "type": "object"
    },
    "type": "array"
   },
   "integration": {
-   "properties": {
-    "lastNotifyAttempt": {
-     "description": "A timestamp indicating the last attempt to deliver a notification regardless of the outcome.\nFormat: date-time",
-     "format": "date-time",
-     "type": "string"
-    },
-    "lastNotifyAttemptDuration": {
-     "description": "Duration of the last attempt to deliver a notification in humanized format (`1s` or `15ms`, etc).",
-     "type": "string"
-    },
-    "lastNotifyAttemptError": {
-     "description": "Error string for the last attempt to deliver a notification. Empty if the last attempt was successful.",
-     "type": "string"
-    },
-    "name": {
-     "description": "name",
-     "type": "string"
-    },
-    "sendResolved": {
-     "description": "send resolved",
-     "type": "boolean"
-    }
-   },
    "required": [
     "name",
     "sendResolved"
@@ -4844,24 +4751,6 @@
    "type": "object"
   },
   "receiver": {
-   "description": "Receiver receiver",
-   "properties": {
-    "active": {
-     "description": "active",
-     "type": "boolean"
-    },
-    "integrations": {
-     "description": "integrations",
-     "items": {
-      "$ref": "#/definitions/integration"
-     },
-     "type": "array"
-    },
-    "name": {
-     "description": "name",
-     "type": "string"
-    }
-   },
    "required": [
     "active",
     "integrations",
@@ -6236,9 +6125,9 @@
     ],
     "responses": {
      "202": {
-      "description": "GettableGrafanaRule",
+      "description": "GettableExtendedRuleNode",
       "schema": {
-       "$ref": "#/definitions/GettableGrafanaRule"
+       "$ref": "#/definitions/GettableExtendedRuleNode"
       }
      },
      "403": {
