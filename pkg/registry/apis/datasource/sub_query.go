@@ -11,6 +11,7 @@ import (
 	"k8s.io/apiserver/pkg/registry/rest"
 
 	query "github.com/grafana/grafana/pkg/apis/query/v0alpha1"
+	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/web"
 )
 
@@ -81,7 +82,7 @@ func (r *subQueryREST) Connect(ctx context.Context, name string, opts runtime.Ob
 			responder.Error(err)
 			return
 		}
-		responder.Object(query.GetResponseCode(rsp),
+		responder.Object(query.GetResponseCode(rsp, pluginCtx.GrafanaConfig.FeatureToggles().IsEnabled(featuremgmt.FlagDatasourceQueryMultiStatus)),
 			&query.QueryDataResponse{QueryDataResponse: *rsp},
 		)
 	}), nil

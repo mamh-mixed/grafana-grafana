@@ -39,7 +39,7 @@ func (d *testdataDummy) QueryData(ctx context.Context, req data.QueryDataRequest
 
 	qdr := &backend.QueryDataRequest{Queries: queries}
 	rsp, err := testdata.ProvideService().QueryData(ctx, qdr)
-	return query.GetResponseCode(rsp), rsp, err
+	return query.GetResponseCode(rsp, false), rsp, err
 }
 
 // GetDatasourceAPI implements DataSourceRegistry.

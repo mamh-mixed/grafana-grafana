@@ -24,12 +24,14 @@ import (
 	"github.com/grafana/grafana/pkg/expr/mathexp"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/datasources"
+	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/web"
 )
 
 type queryREST struct {
-	logger  log.Logger
-	builder *QueryAPIBuilder
+	logger             log.Logger
+	builder            *QueryAPIBuilder
+	featureMultiStatus bool // if errors should be returned as 207s
 }
 
 var (
@@ -41,9 +43,20 @@ var (
 )
 
 func newQueryREST(builder *QueryAPIBuilder) *queryREST {
+	list, err := featuremgmt.GetEmbeddedFeatureList()
+	if err != nil {
+		return nil
+	}
+	featureMultiStatus := false
+	for _, flag := range list.Items {
+		if flag.Name == featuremgmt.FlagDatasourceQueryMultiStatus && flag.Spec.Expression == "true" {
+			featureMultiStatus = true
+		}
+	}
 	return &queryREST{
-		logger:  log.New("query"),
-		builder: builder,
+		logger:             log.New("query"),
+		builder:            builder,
+		featureMultiStatus: featureMultiStatus,
 	}
 }
 
@@ -140,8 +153,8 @@ func (r *queryREST) Connect(connectCtx context.Context, name string, _ runtime.O
 			responder.Error(err)
 			return
 		}
-
-		responder.Object(query.GetResponseCode(rsp), &query.QueryDataResponse{
+		// TODO: we need to get the instance configuration and use that here...
+		responder.Object(query.GetResponseCode(rsp, r.featureMultiStatus), &query.QueryDataResponse{
 			QueryDataResponse: *rsp, // wrap the backend response as a QueryDataResponse
 		})
 	}), nil

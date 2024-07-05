@@ -15,14 +15,16 @@ import (
 	query "github.com/grafana/grafana/pkg/apis/query/v0alpha1"
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/services/datasources"
+	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/plugincontext"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginstore"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
 type pluginClient struct {
-	pluginClient plugins.Client
-	pCtxProvider *plugincontext.Provider
+	pluginClient       plugins.Client
+	pCtxProvider       *plugincontext.Provider
+	featureMultiStatus bool // if errors should be returned as 207s
 }
 
 type pluginRegistry struct {
@@ -41,9 +43,20 @@ var _ query.DataSourceApiServerRegistry = (*pluginRegistry)(nil)
 
 // NewQueryClientForPluginClient creates a client that delegates to the internal plugins.Client stack
 func NewQueryClientForPluginClient(p plugins.Client, ctx *plugincontext.Provider) data.QueryDataClient {
+	list, err := featuremgmt.GetEmbeddedFeatureList()
+	if err != nil {
+		return nil
+	}
+	featureMultiStatus := false
+	for _, flag := range list.Items {
+		if flag.Name == featuremgmt.FlagDatasourceQueryMultiStatus && flag.Spec.Expression == "true" {
+			featureMultiStatus = true
+		}
+	}
 	return &pluginClient{
-		pluginClient: p,
-		pCtxProvider: ctx,
+		pluginClient:       p,
+		pCtxProvider:       ctx,
+		featureMultiStatus: featureMultiStatus,
 	}
 }
 
@@ -81,7 +94,8 @@ func (d *pluginClient) QueryData(ctx context.Context, req data.QueryDataRequest)
 	}
 
 	rsp, err := d.pluginClient.QueryData(ctx, qdr)
-	code := query.GetResponseCode(rsp)
+	// TODO: we need to get the instance configuration and use that here...
+	code := query.GetResponseCode(rsp, d.featureMultiStatus)
 	return code, rsp, err
 }
 

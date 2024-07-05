@@ -28,23 +28,28 @@ type QueryDataResponse struct {
 }
 
 // If errors exist, return multi-status
-func GetResponseCode(rsp *backend.QueryDataResponse) int {
+func GetResponseCode(rsp *backend.QueryDataResponse, flagDatasourceQueryMultiStatus bool) int {
 	if rsp == nil {
 		return http.StatusInternalServerError
 	}
 
-	if len(rsp.Responses) == 0 {
-		return http.StatusOK
-	}
-
 	var code int
 	for _, v := range rsp.Responses {
+		// if feature toggle is enabled, return multiStatus for 500s
+		if v.Error != nil && flagDatasourceQueryMultiStatus && int(v.Status) > 499 {
+			return http.StatusMultiStatus
+
+		}
+
 		if code == 0 {
 			code = int(v.Status)
 		} else if code != int(v.Status) {
-			code = http.StatusMultiStatus
-			break
+			return http.StatusMultiStatus
 		}
+	}
+
+	if code == 0 {
+		return http.StatusOK
 	}
 
 	return code
