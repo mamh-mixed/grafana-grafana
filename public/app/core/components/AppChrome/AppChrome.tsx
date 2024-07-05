@@ -9,6 +9,7 @@ import { useGrafana } from 'app/core/context/GrafanaContext';
 import { useMediaQueryChange } from 'app/core/hooks/useMediaQueryChange';
 import store from 'app/core/store';
 import { CommandPalette } from 'app/features/commandPalette/CommandPalette';
+import { renderScopesDashboards } from 'app/features/scopes';
 import { KioskMode } from 'app/types';
 
 import { AppChromeMenu } from './AppChromeMenu';
@@ -105,6 +106,7 @@ export function AppChrome({ children }: Props) {
           {!state.chromeless && state.megaMenuDocked && state.megaMenuOpen && (
             <MegaMenu className={styles.dockedMegaMenu} onClose={() => chrome.setMegaMenuOpen(false)} />
           )}
+          {!state.chromeless && renderScopesDashboards()}
           <main className={styles.pageContainer} id="pageContent">
             {children}
           </main>
