@@ -94,7 +94,7 @@ require (
 	github.com/grafana/grafana-openapi-client-go v0.0.0-20231213163343-bd475d63fb79 // @grafana/grafana-backend-group
 	github.com/grafana/grafana-plugin-sdk-go v0.235.0 // @grafana/plugins-platform-backend
 	github.com/grafana/grafana/pkg/apimachinery v0.0.0-20240701190119-78f9c0fd4144 // @grafana/grafana-app-platform-squad
-	github.com/grafana/grafana/pkg/apiserver v0.0.0-20240701190119-78f9c0fd4144 // @grafana/grafana-app-platform-squad
+	github.com/grafana/grafana/pkg/apiserver v0.0.0-20240705183702-863c9fc34e33 // @grafana/grafana-app-platform-squad
 	// This needs to be here for other projects that import grafana/grafana
 	// For local development grafana/grafana will always use the local files
 	// Check go.work file for details
@@ -187,10 +187,10 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // @grafana/alerting-backend
 	gopkg.in/mail.v2 v2.3.1 // @grafana/grafana-backend-group
 	gopkg.in/yaml.v3 v3.0.1 // @grafana/alerting-backend
-	k8s.io/api v0.29.3 // @grafana/grafana-app-platform-squad
-	k8s.io/apimachinery v0.29.3 // @grafana/grafana-app-platform-squad
+	k8s.io/api v0.30.2 // @grafana/grafana-app-platform-squad
+	k8s.io/apimachinery v0.30.2 // @grafana/grafana-app-platform-squad
 	k8s.io/apiserver v0.29.2 // @grafana/grafana-app-platform-squad
-	k8s.io/client-go v0.29.3 // @grafana/grafana-app-platform-squad
+	k8s.io/client-go v0.30.2 // @grafana/grafana-app-platform-squad
 	k8s.io/code-generator v0.29.1 // @grafana/grafana-app-platform-squad
 	k8s.io/component-base v0.29.2 // @grafana/grafana-app-platform-squad
 	k8s.io/klog/v2 v2.120.1 // @grafana/grafana-app-platform-squad
