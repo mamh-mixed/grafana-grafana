@@ -94,7 +94,7 @@ require (
 	github.com/grafana/grafana-openapi-client-go v0.0.0-20231213163343-bd475d63fb79 // @grafana/grafana-backend-group
 	github.com/grafana/grafana-plugin-sdk-go v0.235.0 // @grafana/plugins-platform-backend
 	github.com/grafana/grafana/pkg/apimachinery v0.0.0-20240701190119-78f9c0fd4144 // @grafana/grafana-app-platform-squad
-	github.com/grafana/grafana/pkg/apiserver v0.0.0-20240701190119-78f9c0fd4144 // @grafana/grafana-app-platform-squad
+	github.com/grafana/grafana/pkg/apiserver v0.0.0-20240706163945-aaf23c64c33b // @grafana/grafana-app-platform-squad
 	// This needs to be here for other projects that import grafana/grafana
 	// For local development grafana/grafana will always use the local files
 	// Check go.work file for details
@@ -193,7 +193,7 @@ require (
 	k8s.io/client-go v0.29.3 // @grafana/grafana-app-platform-squad
 	k8s.io/code-generator v0.29.1 // @grafana/grafana-app-platform-squad
 	k8s.io/component-base v0.29.2 // @grafana/grafana-app-platform-squad
-	k8s.io/klog/v2 v2.120.1 // @grafana/grafana-app-platform-squad
+	k8s.io/klog/v2 v2.130.1 // @grafana/grafana-app-platform-squad
 	k8s.io/kube-aggregator v0.29.0 // @grafana/grafana-app-platform-squad
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // @grafana/grafana-app-platform-squad
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b // @grafana/partner-datasources
