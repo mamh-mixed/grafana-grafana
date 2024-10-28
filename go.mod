@@ -26,7 +26,7 @@ require (
 	github.com/Azure/azure-storage-blob-go v0.15.0 // @grafana/grafana-backend-group
 	github.com/Azure/go-autorest/autorest v0.11.29 // @grafana/grafana-backend-group
 	github.com/Azure/go-autorest/autorest/adal v0.9.23 // @grafana/grafana-backend-group
-	github.com/BurntSushi/toml v1.3.2 // @grafana/identity-access-team
+	github.com/BurntSushi/toml v1.4.0 // @grafana/identity-access-team
 	github.com/Masterminds/semver v1.5.0 // @grafana/grafana-backend-group
 	github.com/Masterminds/semver/v3 v3.2.0 // @grafana/grafana-release-guild
 	github.com/Masterminds/sprig/v3 v3.2.3 // @grafana/grafana-backend-group
@@ -153,7 +153,7 @@ require (
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf // @grafana/grafana-backend-group
 	github.com/ua-parser/uap-go v0.0.0-20211112212520-00c877edfe0f // @grafana/grafana-backend-group
 	github.com/urfave/cli v1.22.15 // indirect; @grafana/grafana-backend-group
-	github.com/urfave/cli/v2 v2.27.1 // @grafana/grafana-backend-group
+	github.com/urfave/cli/v2 v2.27.5 // @grafana/grafana-backend-group
 	github.com/wk8/go-ordered-map v1.0.0 // @grafana/grafana-backend-group
 	github.com/xlab/treeprint v1.2.0 // @grafana/observability-traces-and-profiling
 	github.com/yudai/gojsondiff v1.0.0 // @grafana/grafana-backend-group
@@ -260,7 +260,7 @@ require (
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
 	github.com/coreos/go-semver v0.3.1 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/dgryski/go-metro v0.0.0-20211217172704-adc40b04c140 // indirect
@@ -397,7 +397,7 @@ require (
 	github.com/unknwon/log v0.0.0-20200308114134-929b1006e34a // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/wk8/go-ordered-map/v2 v2.1.8 // indirect
-	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
+	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
 	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	github.com/yuin/gopher-lua v1.1.1 // indirect
