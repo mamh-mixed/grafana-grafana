@@ -1,6 +1,6 @@
 module github.com/grafana/grafana/pkg/storage/unified/resource
 
-go 1.21.10
+go 1.22
 
 require (
 	github.com/grafana/authlib v0.0.0-20240611075137-331cbe4e840f
