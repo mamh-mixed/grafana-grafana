@@ -4,7 +4,7 @@ go 1.21.10
 
 require (
 	github.com/grafana/authlib v0.0.0-20240611075137-331cbe4e840f
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.11.1
 	google.golang.org/grpc v1.64.0
 )
 
