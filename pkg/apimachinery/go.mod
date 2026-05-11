@@ -1,6 +1,6 @@
 module github.com/grafana/grafana/pkg/apimachinery
 
-go 1.21.10
+go 1.25.0
 
 require (
 	github.com/stretchr/testify v1.9.0
