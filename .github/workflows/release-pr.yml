@@ -38,7 +38,7 @@ jobs:
           app_id: ${{ secrets.GRAFANA_DELIVERY_BOT_APP_ID }}
           private_key: ${{ secrets.GRAFANA_DELIVERY_BOT_APP_PEM }}
       - name: Checkout Grafana
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Configure git user
         run: |
           git config --local user.name "github-actions[bot]"
