@@ -45,7 +45,7 @@ jobs:
           path: ephemeral
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v7
         with:
           go-version-file: ephemeral/go.mod
 
