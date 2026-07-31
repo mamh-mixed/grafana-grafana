@@ -27,7 +27,7 @@ jobs:
       - name: Build grafana
         run: make build
       - name: Install Cypress dependencies
-        uses: cypress-io/github-action@v6
+        uses: cypress-io/github-action@v7
         with: 
           runTests: false
       - name: Run dashboard scenes e2e
