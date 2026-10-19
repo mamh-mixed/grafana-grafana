@@ -14,10 +14,10 @@
      "type": "string"
     },
     "annotations": {
-     "$ref": "#/definitions/overrideLabels"
+     "$ref": "#/definitions/Labels"
     },
     "labels": {
-     "$ref": "#/definitions/overrideLabels"
+     "$ref": "#/definitions/Labels"
     },
     "state": {
      "type": "string"
@@ -430,7 +430,7 @@
      "type": "array"
     },
     "annotations": {
-     "$ref": "#/definitions/overrideLabels"
+     "$ref": "#/definitions/Labels"
     },
     "duration": {
      "format": "double",
@@ -444,7 +444,7 @@
      "type": "string"
     },
     "labels": {
-     "$ref": "#/definitions/overrideLabels"
+     "$ref": "#/definitions/Labels"
     },
     "lastError": {
      "type": "string"
@@ -1715,6 +1715,9 @@
       "$ref": "#/definitions/TimeIntervalItem"
      },
      "type": "array"
+    },
+    "version": {
+     "type": "string"
     }
    },
    "type": "object"
@@ -3460,7 +3463,7 @@
      "type": "string"
     },
     "labels": {
-     "$ref": "#/definitions/overrideLabels"
+     "$ref": "#/definitions/Labels"
     },
     "lastError": {
      "type": "string"
@@ -4499,7 +4502,6 @@
    "type": "object"
   },
   "alertGroups": {
-   "description": "AlertGroups alert groups",
    "items": {
     "$ref": "#/definitions/alertGroup",
     "type": "object"
@@ -4661,6 +4663,7 @@
    "type": "object"
   },
   "gettableAlerts": {
+   "description": "GettableAlerts gettable alerts",
    "items": {
     "$ref": "#/definitions/gettableAlert",
     "type": "object"
@@ -4785,7 +4788,6 @@
    "type": "object"
   },
   "gettableSilences": {
-   "description": "GettableSilences gettable silences",
    "items": {
     "$ref": "#/definitions/gettableSilence",
     "type": "object"
@@ -4863,14 +4865,6 @@
     "$ref": "#/definitions/matcher"
    },
    "type": "array"
-  },
-  "overrideLabels": {
-   "additionalProperties": {
-    "type": "string"
-   },
-   "description": "The custom marshaling for labels.Labels ends up doing this anyways.",
-   "title": "override the labels type with a map for generation.",
-   "type": "object"
   },
   "peerStatus": {
    "description": "PeerStatus peer status",
@@ -8664,7 +8658,7 @@
    "description": "",
    "schema": {
     "items": {
-     "$ref": "#/definitions/receiver"
+     "$ref": "#/definitions/Receiver"
     },
     "type": "array"
    }

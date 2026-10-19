@@ -3574,10 +3574,10 @@
           "format": "date-time"
         },
         "annotations": {
-          "$ref": "#/definitions/overrideLabels"
+          "$ref": "#/definitions/Labels"
         },
         "labels": {
-          "$ref": "#/definitions/overrideLabels"
+          "$ref": "#/definitions/Labels"
         },
         "state": {
           "type": "string"
@@ -3992,7 +3992,7 @@
           }
         },
         "annotations": {
-          "$ref": "#/definitions/overrideLabels"
+          "$ref": "#/definitions/Labels"
         },
         "duration": {
           "type": "number",
@@ -4006,7 +4006,7 @@
           "type": "string"
         },
         "labels": {
-          "$ref": "#/definitions/overrideLabels"
+          "$ref": "#/definitions/Labels"
         },
         "lastError": {
           "type": "string"
@@ -5269,6 +5269,9 @@
           "items": {
             "$ref": "#/definitions/TimeIntervalItem"
           }
+        },
+        "version": {
+          "type": "string"
         }
       }
     },
@@ -7021,7 +7024,7 @@
           "type": "string"
         },
         "labels": {
-          "$ref": "#/definitions/overrideLabels"
+          "$ref": "#/definitions/Labels"
         },
         "lastError": {
           "type": "string"
@@ -8214,6 +8217,7 @@
       }
     },
     "gettableAlerts": {
+      "description": "GettableAlerts gettable alerts",
       "type": "array",
       "items": {
         "type": "object",
@@ -8338,7 +8342,6 @@
       }
     },
     "gettableSilences": {
-      "description": "GettableSilences gettable silences",
       "type": "array",
       "items": {
         "type": "object",
@@ -8415,14 +8418,6 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/matcher"
-      }
-    },
-    "overrideLabels": {
-      "description": "The custom marshaling for labels.Labels ends up doing this anyways.",
-      "type": "object",
-      "title": "override the labels type with a map for generation.",
-      "additionalProperties": {
-        "type": "string"
       }
     },
     "peerStatus": {
@@ -8702,7 +8697,7 @@
       "schema": {
         "type": "array",
         "items": {
-          "$ref": "#/definitions/receiver"
+          "$ref": "#/definitions/Receiver"
         }
       }
     }
