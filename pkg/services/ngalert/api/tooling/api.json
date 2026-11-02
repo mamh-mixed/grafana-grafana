@@ -14,10 +14,10 @@
      "type": "string"
     },
     "annotations": {
-     "$ref": "#/definitions/overrideLabels"
+     "$ref": "#/definitions/Labels"
     },
     "labels": {
-     "$ref": "#/definitions/overrideLabels"
+     "$ref": "#/definitions/Labels"
     },
     "state": {
      "type": "string"
@@ -430,7 +430,7 @@
      "type": "array"
     },
     "annotations": {
-     "$ref": "#/definitions/overrideLabels"
+     "$ref": "#/definitions/Labels"
     },
     "duration": {
      "format": "double",
@@ -444,7 +444,7 @@
      "type": "string"
     },
     "labels": {
-     "$ref": "#/definitions/overrideLabels"
+     "$ref": "#/definitions/Labels"
     },
     "lastError": {
      "type": "string"
@@ -3463,7 +3463,7 @@
      "type": "string"
     },
     "labels": {
-     "$ref": "#/definitions/overrideLabels"
+     "$ref": "#/definitions/Labels"
     },
     "lastError": {
      "type": "string"
@@ -4503,6 +4503,7 @@
    "type": "object"
   },
   "alertGroups": {
+   "description": "AlertGroups alert groups",
    "items": {
     "$ref": "#/definitions/alertGroup",
     "type": "object"
@@ -4738,31 +4739,6 @@
    },
    "type": "array"
   },
-  "gettableGrafanaSilence": {
-   "properties": {
-    "accessControl": {
-     "additionalProperties": {
-      "type": "boolean"
-     },
-     "example": {
-      "create": false,
-      "read": true,
-      "write": false
-     },
-     "type": "object"
-    },
-    "metadata": {
-     "$ref": "#/definitions/SilenceMetadata"
-    }
-   },
-   "type": "object"
-  },
-  "gettableGrafanaSilences": {
-   "items": {
-    "$ref": "#/definitions/gettableGrafanaSilence"
-   },
-   "type": "array"
-  },
   "gettableSilence": {
    "description": "GettableSilence gettable silence",
    "properties": {
@@ -4890,14 +4866,6 @@
     "$ref": "#/definitions/matcher"
    },
    "type": "array"
-  },
-  "overrideLabels": {
-   "additionalProperties": {
-    "type": "string"
-   },
-   "description": "The custom marshaling for labels.Labels ends up doing this anyways.",
-   "title": "override the labels type with a map for generation.",
-   "type": "object"
   },
   "peerStatus": {
    "description": "PeerStatus peer status",
@@ -6345,7 +6313,7 @@
    "description": "",
    "schema": {
     "items": {
-     "$ref": "#/definitions/receiver"
+     "$ref": "#/definitions/Receiver"
     },
     "type": "array"
    }
